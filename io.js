@@ -1,8 +1,188 @@
 var _ = require("underscore");
 
-var IO = function() {};
+var BinaryEncoder = function() {};
 
-IO.prototype = {
+BinaryEncoder.prototype = {   
+    
+}
+
+var BinaryDecoder = function(reader) {};
+
+BinaryDecoder.prototype = {
+    readNull : function () {
+        // No bytes consumed
+        return null;
+    },
+    
+    readBoolean : function () {
+        return this.readByte() === 1 ? true : false;
+    },
+    
+    readInt : function () {
+        var i;
+        var b = this.readByte();
+        var n = b & 0x7f;
+	    
+        for (i = 7; i <= 28 && b > 0x7f; i += 7) {
+            b = this.readByte();
+            n |= (b & 0x7f) << i;
+        }
+	    
+        if (b > 0x7f) {
+            throw "Invalid int encoding.";
+        }
+	    
+        return (n >>> 1) ^ -(n & 1);
+    },
+	
+    readLong : function () {
+        var b = this.readByte();
+        var n = b & 0x7F;
+        var shift = 7;
+
+        while ((b & 0x80) != 0) {
+            b = this.readByte();
+            n |= (b & 0x7F) << shift
+            shift += 7
+        }
+	    
+        return (n >> 1) ^ -(n & 1)
+    },
+    
+    readFloat : function () {
+        var value = this.read32le();
+	    
+        if (this.strictMode) {    // In strictMode, return the 32 bit
+            // float
+            return value;
+        }
+	    
+        // Not able to get the floating point back precisely due to
+        // noise introduced in JS floating arithmetic
+        var sign = ((value >> 31) << 1) + 1;
+        var expo = (value & 0x7f800000) >> 23;
+        var mant = value & 0x007fffff;
+	    
+        if (expo === 0) {
+            if (mant === 0) {
+                return 0;
+            }
+            expo = -126;
+        } else {
+            if (expo === 0xff) {
+                return mant === 0 ? (sign === 1 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY) : Number.NaN;
+            }
+            expo -= 127;
+            mant |= 0x00800000;
+        }
+	    
+        return sign * mant * Math.pow(2, expo - 23);
+    },
+
+    readDouble : function () {
+        var low = this.read32le();
+        var high = this.read32le();
+	    
+        if (this.strictMode) {
+            return [low, high];
+        }
+	    
+        var sign = ((high >> 31) << 1) + 1;
+        var expo = (high & 0x7ff00000) >> 20;
+        var mantHigh = high & 0x000fffff;
+        var mant = 0;
+	    
+        if (expo === 0) {
+            if (low === 0 && mantHigh === 0) {
+                return 0;
+            }
+            if (low === 1 && mantHigh === 0) {
+                return Number.MIN_VALUE;
+            }
+            expo = -1022;
+        } else {
+            if (expo === 0x7ff) {
+                if (low === 0 && mantHigh === 0) {
+                    return sign === 1 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+                } else {
+                    return Number.NaN;
+                }
+            }
+            if ((high ^ 0x7fefffff) === 0 && (low ^ 0xffffffff) === 0) {
+                return Number.MAX_VALUE;
+            }
+            expo -= 1023;
+            mant = 1;
+        }
+	    
+        mant += (low + (high & 0x000fffff) * Math.pow(2, 32)) * Math.pow(2, -52);
+        return sign * mant * Math.pow(2, expo);
+    },
+	
+    readFixed : function (len) {
+        var result = [];
+        var i;
+        for (i = 0; i < len; i++) {
+            result.push(this.readByte());
+        }
+        return result;
+    },
+    
+    readBytes : function () {
+        var len = this.readLong();
+        return this.readFixed(len);
+    },
+    
+    readString : function () {
+        return this.utf8Decode(this.readBytes());
+    },
+
+    readEnum : function () {
+        return this.readInt();
+    },
+}
+
+var Reader = function() {};
+
+Reader.prototype = {
+    
+    readArray: function(schema, datum) {
+        if (datum.length > 0) {
+            this.writeLong(datum.length);
+            _.each(datum, function(value) {
+                writeData(schema, value);
+            });
+            this.writeLong(0);
+        }
+    },
+    
+    readMap: function(schema, datum) {
+        readItems = {};
+        blockCount = readLong
+        if (datum.length > 0) {
+            this.writeLong(datum.length);
+            _.each(schema, function(value, key) {
+                this.writeString(key);
+                this.writeData(schema, value);  // Needs fixing
+            })
+            this.writeLong(0);
+        }
+    }, 
+    
+    readUnion: function(schema, datum) {
+        
+    },
+    
+    readRecord: function(schema, datum) {
+        _.each(schema.fields, function(field) {
+           this.writeData(field.type, datum[field.name]); 
+        });
+    }
+}
+
+var Writer = function() {};
+
+Writer.prototype = {
     
     this.buffer = "",
     
@@ -170,7 +350,16 @@ IO.prototype = {
         _.each(schema.fields, function(field) {
            this.writeData(field.type, datum[field.name]); 
         });
-    },
+    }
+}
+
+var IO = function() {}
+
+IO.prototype = {
+    
+    reader: new Reader()
+    writer: new Writer(),
+    
 }
 
 module.exports = IO;

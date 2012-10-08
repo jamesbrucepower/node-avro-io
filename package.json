@@ -1,0 +1,16 @@
+{
+  "name": "nodeavro",
+  "version": "0.0.1",
+  "dependencies": {
+    "underscore": "latest"
+  },
+  "devDependencies": {
+    "mocha": "latest",
+    "should": "latest",
+    "v8-profiler": "latest"
+  },
+  "engines": {
+    "node": "0.8.x",
+    "npm": "1.1.x"
+  }
+}
