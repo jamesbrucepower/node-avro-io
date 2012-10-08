@@ -2,7 +2,22 @@ var fs = require("fs");
 var validator = require('./validator');
 var io = require('./io');
 
-var DataFile = function(schema) {
+var Writer = function(writer, datumWriter, writersSchema) {
+    
+}
+
+Writer.prototype = {
+    generateSyncMarker: function(size) {
+        var marker = "";
+        for (i = 0; i < size; i++) {
+            marker += String.fromCharCode(Math.floor(Math.random() * 0xFF));
+        }
+        return marker;
+    }
+}
+
+var DataFile = function(outputFileName, schema) {
+    this.outputFileName = outputFileName;
     this.schema = schema;
 };
 
@@ -10,31 +25,31 @@ DataFile.prototype = {
     
     VERSION: 1,
     MAGIC: "Obj",
-    MAGIC_SIZE: this.MAGIC.length + 1,
     SYNC_SIZE: 16,
     SYNC_INTERVAL: 1000 * this.SYNC_SIZE,
-    META_SCHEMA = {"type": "map", "values": "bytes"},
+    META_SCHEMA: {"type": "map", "values": "bytes"},
     VALID_CODECS: ['deflate'],
     VALID_ENCODINGS: ['binary'],
-    HEADER = {
+    HEADER: {
         "avro.codec": "null",
-        "avro.schema": JSON.stringify(this.schema);
+        "avro.schema": JSON.stringify(this.schema)
     },
     
     writeHeader: function() {
-        io.writeString(MAGIC);
-        io.writeByte(this.VERSION);
-        io.writeMap(this.META_SCHEMA, header);
-        io.writeSync(SYNC_SIZE);
+        io.writer.writeString(this.MAGIC);
+        io.writer.writeByte(this.VERSION);
+        io.writer.writeMap(this.META_SCHEMA, header);
+        io.writer.writeSync(this.SYNC_SIZE);
     },
     
     writeData: function(data) {
         
     },
     
-    writeFile: function(filename, data) {
-        
-        this.writeHeader;
+    write: function(data, callback) {
+        this.writeHeader();
+        this.writeData();
+        callback();
     },
 }
 

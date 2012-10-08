@@ -1,14 +1,17 @@
 var _ = require("underscore");
 
-var BinaryEncoder = function() {};
-
-BinaryEncoder.prototype = {   
-    
-}
-
-var BinaryDecoder = function(reader) {};
+var BinaryDecoder = function(reader) {
+    this.reader = reader;
+};
 
 BinaryDecoder.prototype = {
+    
+    buffer: "",
+    
+    readByte: function () {
+        return this.buffer.charCodeAt(this.idx++);
+    },
+    
     readNull : function () {
         // No bytes consumed
         return null;
@@ -119,7 +122,7 @@ BinaryDecoder.prototype = {
         return sign * mant * Math.pow(2, expo);
     },
 	
-    readFixed : function (len) {
+    readFixed : function(len) {
         var result = [];
         var i;
         for (i = 0; i < len; i++) {
@@ -128,63 +131,25 @@ BinaryDecoder.prototype = {
         return result;
     },
     
-    readBytes : function () {
+    readBytes : function() {
         var len = this.readLong();
         return this.readFixed(len);
     },
     
-    readString : function () {
+    readString : function() {
         return this.utf8Decode(this.readBytes());
     },
 
-    readEnum : function () {
+    readEnum : function() {
         return this.readInt();
     },
 }
 
-var Reader = function() {};
+var BinaryEncoder = function(writer) {
+    this.writer = writer;
+};
 
-Reader.prototype = {
-    
-    readArray: function(schema, datum) {
-        if (datum.length > 0) {
-            this.writeLong(datum.length);
-            _.each(datum, function(value) {
-                writeData(schema, value);
-            });
-            this.writeLong(0);
-        }
-    },
-    
-    readMap: function(schema, datum) {
-        readItems = {};
-        blockCount = readLong
-        if (datum.length > 0) {
-            this.writeLong(datum.length);
-            _.each(schema, function(value, key) {
-                this.writeString(key);
-                this.writeData(schema, value);  // Needs fixing
-            })
-            this.writeLong(0);
-        }
-    }, 
-    
-    readUnion: function(schema, datum) {
-        
-    },
-    
-    readRecord: function(schema, datum) {
-        _.each(schema.fields, function(field) {
-           this.writeData(field.type, datum[field.name]); 
-        });
-    }
-}
-
-var Writer = function() {};
-
-Writer.prototype = {
-    
-    this.buffer = "",
+BinaryEncoder.prototype = {   
     
     writeNull : function () {
         // Nothing need to write
@@ -281,8 +246,53 @@ Writer.prototype = {
         for (i = start; i < end; i++) {
             this.writeByte(bytes[i]);
         }
+    }
+}
+
+var Reader = function() {};
+
+Reader.prototype = {
+    
+    readArray: function(schema, datum) {
+        if (datum.length > 0) {
+            this.writeLong(datum.length);
+            _.each(datum, function(value) {
+                writeData(schema, value);
+            });
+            this.writeLong(0);
+        }
     },
     
+    readMap: function(schema, datum) {
+        readItems = {};
+        blockCount = readLong
+        if (datum.length > 0) {
+            this.writeLong(datum.length);
+            _.each(schema, function(value, key) {
+                this.writeString(key);
+                this.writeData(schema, value);  // Needs fixing
+            })
+            this.writeLong(0);
+        }
+    }, 
+    
+    readUnion: function(schema, datum) {
+        
+    },
+    
+    readRecord: function(schema, datum) {
+        _.each(schema.fields, function(field) {
+           this.writeData(field.type, datum[field.name]); 
+        });
+    }
+}
+
+var Writer = function() {};
+
+Writer.prototype = {
+    
+    buffer: "",
+        
     writeData: function(schema, datum) {
         validator.validate(schema);
         
@@ -357,8 +367,8 @@ var IO = function() {}
 
 IO.prototype = {
     
-    reader: new Reader()
-    writer: new Writer(),
+    reader: new Reader(),
+    writer: new Writer()
     
 }
 

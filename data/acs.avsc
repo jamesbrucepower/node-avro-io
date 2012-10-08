@@ -1,0 +1,170 @@
+{
+    "fields": [
+        {
+            "name": "type", 
+            "type": {
+                "name": "LogEventType", 
+                "symbols": [
+                    "ACCESS", 
+                    "EXCEPTION", 
+                    "ERROR"
+                ], 
+                "type": "enum"
+            }
+        }, 
+        {
+            "name": "host", 
+            "type": "string"
+        }, 
+        {
+            "name": "time", 
+            "type": "string"
+        }, 
+        {
+            "name": "elapsedTime", 
+            "type": [
+                "long", 
+                "null"
+            ]
+        }, 
+        {
+            "name": "tid", 
+            "type": "int"
+        }, 
+        {
+            "name": "message", 
+            "type": [
+                "string", 
+                "null"
+            ]
+        }, 
+        {
+            "name": "request", 
+            "type": [
+                {
+                    "fields": [
+                        {
+                            "name": "headers", 
+                            "type": {
+                                "type": "map", 
+                                "values": "string"
+                            }
+                        }, 
+                        {
+                            "name": "method", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "path", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "queryString", 
+                            "type": [
+                                "string", 
+                                "null"
+                            ]
+                        }, 
+                        {
+                            "name": "remoteIp", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "body", 
+                            "type": {
+                                "type": "map", 
+                                "values": "string"
+                            }
+                        }
+                    ], 
+                    "name": "Request", 
+                    "type": "record"
+                }, 
+                "null"
+            ]
+        }, 
+        {
+            "name": "response", 
+            "type": [
+                {
+                    "fields": [
+                        {
+                            "name": "status", 
+                            "type": "int"
+                        }, 
+                        {
+                            "name": "headers", 
+                            "type": {
+                                "type": "map", 
+                                "values": "string"
+                            }
+                        }, 
+                        {
+                            "name": "body", 
+                            "type": {
+                                "type": "map", 
+                                "values": "string"
+                            }
+                        }
+                    ], 
+                    "name": "Response", 
+                    "type": "record"
+                }, 
+                "null"
+            ]
+        }, 
+        {
+            "name": "user", 
+            "type": [
+                {
+                    "fields": [
+                        {
+                            "name": "username", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "externalId", 
+                            "type": [
+                                "string", 
+                                "null"
+                            ]
+                        }
+                    ], 
+                    "name": "User", 
+                    "type": "record"
+                }, 
+                "null"
+            ]
+        }, 
+        {
+            "name": "exception", 
+            "type": [
+                {
+                    "fields": [
+                        {
+                            "name": "class", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "message", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "stackTrace", 
+                            "type": [
+                                "null", 
+                                "string"
+                            ]
+                        }
+                    ], 
+                    "name": "AppException", 
+                    "type": "record"
+                }, 
+                "null"
+            ]
+        }
+    ], 
+    "name": "LogEvent", 
+    "namespace": "uk.co.newsint.platform.logging.avro", 
+    "type": "record"
+}
