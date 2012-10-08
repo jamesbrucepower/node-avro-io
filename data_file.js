@@ -16,16 +16,16 @@ DataFile.prototype = {
     META_SCHEMA = {"type": "map", "values": "bytes"},
     VALID_CODECS: ['deflate'],
     VALID_ENCODINGS: ['binary'],
-
-    header = {
+    HEADER = {
         "avro.codec": "null",
         "avro.schema": JSON.stringify(this.schema);
     },
-
+    
     writeHeader: function() {
         io.writeString(MAGIC);
         io.writeByte(this.VERSION);
         io.writeMap(this.META_SCHEMA, header);
+        io.writeSync(SYNC_SIZE);
     },
     
     writeData: function(data) {
