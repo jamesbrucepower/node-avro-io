@@ -6,10 +6,6 @@ var BinaryDecoder = function(reader) {
 
 BinaryDecoder.prototype = {
     
-    readByte: function () {
-        return this.buffer.charCodeAt(this.idx++);
-    },
-    
     readNull: function () {
         // No bytes consumed
         return null;
@@ -152,10 +148,6 @@ BinaryEncoder.prototype = {
     writeNull : function () {
         // Nothing need to write
     },
-
-    writeByte: function (b) {
-        this.buffer += String.fromCharCode(b);
-    },
     
     writeBoolean : function (value) {
         this.writeByte(value ? 1 : 0);
@@ -247,12 +239,19 @@ BinaryEncoder.prototype = {
     }
 }
 
-var Reader = function(writersSchema, readersSchema) {
+var DatumReader = function(writersSchema, readersSchema) {
     this.writersSchema = writersSchema;
     this.readersSchema = readersSchema;
 };
 
-Reader.prototype = {
+DatumReader.prototype = {
+
+    buffer = "",
+    idx = 0,
+    
+    readByte: function () {
+        return this.buffer.charCodeAt(this.idx++);
+    },
     
     read: function(decoder){
         if (!this.readersSchema)
@@ -332,12 +331,17 @@ Reader.prototype = {
     }
 }
 
-var Writer = function() {};
+var DatumWriter = function() {};
 
-Writer.prototype = {
+DatumWriter.prototype = {
     
-    buffer: "",
+    buffer = "",
+    idx = 0,
         
+    writeByte: function (b) {
+        this.buffer += String.fromCharCode(b);
+    },
+    
     writeData: function(schema, datum) {
         validator.validate(schema);
         
@@ -412,8 +416,8 @@ var IO = function() {}
 
 IO.prototype = {
     
-    reader: new Reader(),
-    writer: new Writer()
+    reader: new DatumReader(),
+    writer: new DatumWriter()
     
 }
 

@@ -19,36 +19,87 @@ Writer.prototype = {
 var DataFile = function(outputFileName, schema) {
     this.outputFileName = outputFileName;
     this.schema = schema;
+    this.writer = io.writer;
+    this.reader = io.reader;
 };
 
 DataFile.prototype = {
     
     VERSION: 1,
-    MAGIC: "Obj",
+    MAGIC: "Obj" + String.fromCharCode(this.VERSION),
     SYNC_SIZE: 16,
     SYNC_INTERVAL: 1000 * this.SYNC_SIZE,
-    META_SCHEMA: {"type": "map", "values": "bytes"},
-    VALID_CODECS: ['deflate'],
-    VALID_ENCODINGS: ['binary'],
-    HEADER: {
-        "avro.codec": "null",
-        "avro.schema": JSON.stringify(this.schema)
+    VALID_CODECS: ["null", "deflate"],
+    VALID_ENCODINGS: ["binary"],            // Not used
+    
+    blockSchema: {
+        {"type": "record", "name": "org.apache.avro.Block",
+         "fields" : [
+           {"name": "objectCount", "type": "long" },
+           {"name": "objectSize", "type": "long" },
+           {"name": "objects", "type": "bytes" },
+           {"name": "sync", "type": {"type": "fixed", "name": "Sync", "size": 16}}
+          ]
+        }
     },
     
-    writeHeader: function() {
-        io.writer.writeString(this.MAGIC);
-        io.writer.writeByte(this.VERSION);
-        io.writer.writeMap(this.META_SCHEMA, header);
-        io.writer.writeSync(this.SYNC_SIZE);
+    metaData: function(codec, schema) {
+        return {
+            "avro.codec": codec,
+            "avro.schema": JSON.stringify(schema)
+        };
+    },
+    
+    metaSchema: function() {
+        return {
+            "type": "record", 
+            "name": "org.apache.avro.file.Header",
+            "fields" : [
+                { 
+                    "name": "magic", 
+                    "type": {
+                        "type": "fixed", 
+                        "name": "magic", 
+                        "size": this.MAGIC.length
+                    }
+                },
+                {
+                    "name": "meta", 
+                    "type": {
+                        "type": "map",
+                        "values": "bytes"
+                    }
+                },
+                {
+                    "name": "sync", 
+                    "type": {
+                        "type": "fixed", 
+                        "name": "sync", 
+                        "size": this.SYNC_SIZE
+                    }
+                }
+            ]
+        }
+    },
+    
+    writeHeader: function(codec) {
+        header = {
+            'magic': this.MAGIC,
+            'meta': this.metaData(codec, this.schema),
+            'sync': this.writer.generateSyncMarker()
+        }
+        this.writer.writeData(this.metaSchema(), header, this.encoder);
+        return this.writer.buffer;
     },
     
     writeData: function(data) {
         
     },
     
-    write: function(data, callback) {
-        this.writeHeader();
-        this.writeData();
+    write: function(data, codec, callback) {
+        
+        this.writeHeader(codec);
+        this.writeData(codec);
         callback();
     },
 }
