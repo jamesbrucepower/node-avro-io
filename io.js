@@ -6,22 +6,20 @@ var BinaryDecoder = function(reader) {
 
 BinaryDecoder.prototype = {
     
-    buffer: "",
-    
     readByte: function () {
         return this.buffer.charCodeAt(this.idx++);
     },
     
-    readNull : function () {
+    readNull: function () {
         // No bytes consumed
         return null;
     },
     
-    readBoolean : function () {
+    readBoolean: function () {
         return this.readByte() === 1 ? true : false;
     },
     
-    readInt : function () {
+    readInt: function () {
         var i;
         var b = this.readByte();
         var n = b & 0x7f;
@@ -38,7 +36,7 @@ BinaryDecoder.prototype = {
         return (n >>> 1) ^ -(n & 1);
     },
 	
-    readLong : function () {
+    readLong: function () {
         var b = this.readByte();
         var n = b & 0x7F;
         var shift = 7;
@@ -52,7 +50,7 @@ BinaryDecoder.prototype = {
         return (n >> 1) ^ -(n & 1)
     },
     
-    readFloat : function () {
+    readFloat: function () {
         var value = this.read32le();
 	    
         if (this.strictMode) {    // In strictMode, return the 32 bit
@@ -249,11 +247,55 @@ BinaryEncoder.prototype = {
     }
 }
 
-var Reader = function() {};
+var Reader = function(writersSchema, readersSchema) {
+    this.writersSchema = writersSchema;
+    this.readersSchema = readersSchema;
+};
 
 Reader.prototype = {
     
-    readArray: function(schema, datum) {
+    read: function(decoder){
+        if (!this.readersSchema)
+            this.readersSchema = this.writersSchema
+        this.readData(this.writersSchema, this.readersSchema, decoder)
+    },
+    
+    readData: function(writersSchema, readersSchema, decoder) {
+        
+        switch(writersSchema.type) {
+            case "null":    decoder.readNull(); break;
+            case "boolean": decoder.readBoolean(); break;
+            case "string":  decoder.readString(); break;
+            case "int":     decoder.readInt(); break;
+            case "long":    decoder.readLong(); break;
+            case "float":   decoder.readFloat(); break;
+            case "double":  decoder.readDouble(); break;
+            case "bytes":   decoder.readBytes(); break;
+            case "fixed":   this.readFixed(writersSchema, readersSchema, decoder); break;
+            case "enum":    this.readEnum(writersSchema, readersSchema, decoder); break;
+            case "array":   this.readArray(writersSchema, readersSchema, decoder); break;
+            case "map":     this.readMap(writersSchema, readersSchema, decoder); break;
+            case "union":   this.readUnion(writersSchema, readersSchema, decoder); break;
+            case "record":
+            case "errors":
+            case "request": this.readRecord(writersSchema, readersSchema, decoder); break;
+            default:
+                throw new Error("Unknown type: " + writersSchema.type);
+        }
+    },
+    
+    readFixed: function(writersSchema, readersSchema, decoder) {
+        decoder.read(writersSchema.length());
+    },
+    
+    readEnum: function(writersSchema, readersSchema, decoder) {
+        var symbolIndex = decoder.readInt();
+        var readSymbol = writersSchema.symbols[symbolIndex];
+        
+        return readSymbol;
+    },
+    
+    readArray: function(writersSchema, readersSchema, decoder) {
         if (datum.length > 0) {
             this.writeLong(datum.length);
             _.each(datum, function(value) {
@@ -276,8 +318,11 @@ Reader.prototype = {
         }
     }, 
     
-    readUnion: function(schema, datum) {
+    readUnion: function(writersSchema, readersSchema, decoder) {
+        var schemaIndex = decoder.readLong();
+        var selectedWritersSchema = writersSchema.schemas[schemaIndex];
         
+        return this.readData(selectedWritersSchema, readersSchema, decoder);
     },
     
     readRecord: function(schema, datum) {
