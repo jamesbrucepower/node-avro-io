@@ -1,6 +1,11 @@
 var _ = require("underscore");
+var validator = require('./validator').Validator;
 
 var BinaryDecoder = function(reader) {
+    
+    if ((this instanceof arguments.callee) === false)
+        return new arguments.callee(reader);
+        
     this.reader = reader;
 };
 
@@ -136,36 +141,66 @@ BinaryDecoder.prototype = {
 
     readEnum : function() {
         return this.readInt();
-    },
+    }
 }
 
 var BinaryEncoder = function(writer) {
+    
+    if ((this instanceof arguments.callee) === false)
+        return new arguments.callee(writer);
+        
     this.writer = writer;
 };
 
 BinaryEncoder.prototype = {   
     
-    writeNull : function () {
+    utf8Encode: function (str) {
+        var len = str.length;
+        var result = [];
+        var code;
+        var i;
+        for (i = 0; i < len; i++) {
+            code = str.charCodeAt(i);
+            if (code <= 0x7f) {
+                result.push(code);
+            } else if (code <= 0x7ff) {                         // 2 bytes
+                result.push(0xc0 | (code >>> 6 & 0x1f),
+                0x80 | (code & 0x3f));
+            } else if (code <= 0xd700 || code >= 0xe000) {      // 3 bytes
+                result.push(0xe0 | (code >>> 12 & 0x0f),
+                0x80 | (code >>> 6 & 0x3f),
+                0x80 | (code & 0x3f));
+            } else {                                            // 4 bytes, surrogate pair
+                code = (((code - 0xd800) << 10) | (str.charCodeAt(++i) - 0xdc00)) + 0x10000;
+                result.push(0xf0 | (code >>> 18 & 0x07),
+                0x80 | (code >>> 12 & 0x3f),
+                0x80 | (code >>> 6 & 0x3f),
+                0x80 | (code & 0x3f));
+            }
+        }
+        return result;
+    },
+    
+    writeNull : function() {
         // Nothing need to write
     },
     
-    writeBoolean : function (value) {
-        this.writeByte(value ? 1 : 0);
+    writeBoolean : function(value) {
+        this.writer.writeByte(value ? 1 : 0);
     },
 	
-    writeInt : function (value) {
-        var n = (value << 1) ^ (value >> 31);
-        this.writeVarInt(n);
+    writeInt : function(value) {
+        this.writeLong(value);
     },
 
     writeLong : function (value) {
         var foo = value;
         value = (value << 1) ^ (value >> 63);
         while(value & 0x7f != 0) {
-            this.writeByte((value & 0x7f) | 0x80);
+            this.writer.writeByte((value & 0x7f) | 0x80);
             value >>= 7;
         }
-        this.writeByte(value);
+        this.writer.writeByte(value);
     },
 
     writeFloat : function (f) {
@@ -220,34 +255,50 @@ BinaryEncoder.prototype = {
         }
 	    
         // FIXME: endian consideration necessary?
-        this.writeByte(out);
-        this.writeByte(out >> 8);
-        this.writeByte(out >> 16);
-        this.writeByte(out >> 24);
+        this.writer.writeByte(out);
+        this.writer.writeByte(out >> 8);
+        this.writer.writeByte(out >> 16);
+        this.writer.writeByte(out >> 24);
     },
 
-    writeDouble : function (value) {
+    writeDouble: function (value) {
         // To Be Implemented
+        throw new Error("not implemented");
     },
-
-    writeFixed : function (bytes, start, len) {
+        
+    writeFixed: function(datum) {
         var i;
-        var end = start + len;
-        for (i = start; i < end; i++) {
-            this.writeByte(bytes[i]);
+        var len = datum.length;
+        for (i = 0; i < len; i++) {
+            this.writer.writeByte(datum[i]);
         }
+    },
+    
+    writeBytes: function (datum) {
+        this.writeLong(datum.length);
+        this.writeFixed(datum);
+    },
+    
+    writeString: function(datum) {
+        var utf8 = this.utf8Encode(datum);
+        this.writeBytes(utf8);
     }
+    
 }
 
 var DatumReader = function(writersSchema, readersSchema) {
+    
+    if ((this instanceof arguments.callee) === false)
+        return new arguments.callee(writersSchema, readersSchema);
+        
     this.writersSchema = writersSchema;
     this.readersSchema = readersSchema;
 };
 
 DatumReader.prototype = {
 
-    buffer = "",
-    idx = 0,
+    buffer: "",
+    idx: 0,
     
     readByte: function () {
         return this.buffer.charCodeAt(this.idx++);
@@ -331,94 +382,100 @@ DatumReader.prototype = {
     }
 }
 
-var DatumWriter = function() {};
+var DatumWriter = function(writersSchema) {
+
+    if ((this instanceof arguments.callee) === false)
+        return new arguments.callee(writersSchema);
+        
+    this.writersSchema = writersSchema;
+};
 
 DatumWriter.prototype = {
     
-    buffer = "",
-    idx = 0,
+    buffer: "",
+    idx: 0,
         
-    writeByte: function (b) {
+    writeByte: function(b) {
         this.buffer += String.fromCharCode(b);
+        //console.log(b);
+        //console.log(this.buffer);
+        this.idx++;
     },
     
-    writeData: function(schema, datum) {
-        validator.validate(schema);
+    write: function(datum, encoder) {
+        this.writeData(this.writersSchema, datum, encoder);
+    },
+    
+    writeData: function(writersSchema, datum, encoder) {
+        //validator.validate(writersSchema, datum);
         
-        switch(schema.type) {
-            case "null":    this.writeNull(datum); break;
-            case "boolean": this.writeBoolean(datum); break;
-            case "string":  this.writeString(datum); break;
-            case "int":     this.writeInt(datum); break;
-            case "long":    this.writeLong(datum); break;
-            case "float":   this.writeFloat(datum); break;
-            case "double":  this.writeDouble(datum); break;
-            case "bytes":   this.writeBytes(datum); break;
-            case "fixed":   this.writeFixed(datum); break;
-            case "enum":    this.writeEnum(stringchema, datum); break;
-            case "array":   this.writeArray(schema, datum); break;
-            case "map":     this.writeMap(schema, datum); break;
-            case "union":   this.writeUnion(schema, datum); break;
+        switch(writersSchema.type) {
+            case "null":    encoder.writeNull(datum); break;
+            case "boolean": encoder.writeBoolean(datum); break;
+            case "string":  encoder.writeString(datum); break;
+            case "int":     encoder.writeInt(datum); break;
+            case "long":    encoder.writeLong(datum); break;
+            case "float":   encoder.writeFloat(datum); break;
+            case "double":  encoder.writeDouble(datum); break;
+            case "bytes":   encoder.writeBytes(datum); break;
+            case "fixed":   encoder.writeFixed(datum); break;
+            case "enum":    this.writeEnum(writersSchema, datum, encoder); break;
+            case "array":   this.writeArray(writersSchema, datum, encoder); break;
+            case "map":     this.writeMap(writersSchema, datum, encoder); break;
+            case "union":   this.writeUnion(writersSchema, datum, encoder); break;
             case "record":
             case "errors":
-            case "request": this.writeRecord(schema, datum); break;
+            case "request": this.writeRecord(writersSchema, datum, encoder); break;
             default:
-                throw new Error("Unknown type: " + schema.type);
+                throw new Error("Unknown type: " + writersSchema.type);
         }
     },
     
-    writeString : function (str) {
-        var utf8 = this.utf8Encode(str);
-        this.writeBytes(utf8, 0, utf8.length);
+    writeEnum: function(writersSchema, datum, encoder) {
+        var datumIndex = writersSchema.symbols.index(datum);
+        encoder.writeInt(datumIndex);
     },
     
-    writeFixed: function(schema, datum) {
-        
-    },
-    
-    writeEnum: function(schema, datum) {
-        
-    },
-    
-    writeArray: function(schema, datum) {
+    writeArray: function(writersSchema, datum, encoder) {
         if (datum.length > 0) {
-            this.writeLong(datum.length);
+            encoder.writeLong(datum.length);
             _.each(datum, function(value) {
-                writeData(schema, value);
+                this.writeData(writersSchema.items, item, encoder);
             });
-            this.writeLong(0);
         }
+        encoder.writeLong(0);
     },
     
-    writeMap: function(schema, datum) {
+    writeMap: function(writersSchema, datum, encoder) {
         if (datum.length > 0) {
-            this.writeLong(datum.length);
-            _.each(schema, function(value, key) {
-                this.writeString(key);
-                this.writeData(schema, value);  // Needs fixing
+            encoder.writeLong(_.size(datum));
+            _.each(writersSchema, function(value, key) {
+                encoder.writeString(key);
+                this.writeData(writersSchema, value, encoder);  
             })
-            this.writeLong(0);
         }
+        encoder.writeLong(0);
     }, 
     
-    writeUnion: function(schema, datum) {
+    writeUnion: function(writersSchema, datum, encoder) {
+        var schemaIndex = 0;  //FIXME
         
+        encoder.writeLong(schemaIndex);
+        this.writeData(writersSchema[schemaIndex], datum, encoder);
     },
     
-    writeRecord: function(schema, datum) {
-        _.each(schema.fields, function(field) {
-           this.writeData(field.type, datum[field.name]); 
-        });
+    writeRecord: function(writersSchema, datum, encoder) {
+        var runMe = function(self) {
+            _.each(writersSchema.fields, function(field) {
+                self.writeData(field.type, datum[field.name], encoder); 
+            });
+        }(this);
     }
 }
 
-var IO = function() {}
-
-IO.prototype = {
-    
-    reader: new DatumReader(),
-    writer: new DatumWriter()
-    
+if (typeof(exports) !== 'undefined') {
+    exports.BinaryDecoder = BinaryDecoder;
+    exports.BinaryEncoder = BinaryEncoder;
+    exports.DatumWriter = DatumWriter;
+    exports.DatumReader = DatumReader;
 }
-
-module.exports = IO;
