@@ -20,5 +20,17 @@ describe('IO', function(){
             writer.write("testing", encoder);
             writer.buffer.should.equal("\u000etesting");          
         });
+        it('should encode a record as the values of its fields in the order of declaration', function(){
+            var schema = {"type" : "record", "name" : "ShippingServiceOption", "fields" : [ { "name" : "field1", "type" : "int" }, { "name" : "field2", "type" : "string" }]};
+            var writer = IO.DatumWriter(schema);
+            var encoder = IO.BinaryEncoder(writer);
+            var record = {
+                "field1": 1,
+                "field2": "abc"
+            };
+            writer.write(record, encoder);
+            console.log("%j", writer.buffer);
+            writer.buffer.should.exist;
+        })
     });
 })

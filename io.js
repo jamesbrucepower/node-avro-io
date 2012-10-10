@@ -409,6 +409,7 @@ DatumWriter.prototype = {
     writeData: function(writersSchema, datum, encoder) {
         //validator.validate(writersSchema, datum);
         
+        console.log("%j", writersSchema.type);
         switch(writersSchema.type) {
             case "null":    encoder.writeNull(datum); break;
             case "boolean": encoder.writeBoolean(datum); break;
