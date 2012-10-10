@@ -189,11 +189,11 @@ BinaryEncoder.prototype = {
         this.writer.writeByte(value ? 1 : 0);
     },
 	
-    writeInt : function(value) {
+    writeInt: function(value) {
         this.writeLong(value);
     },
 
-    writeLong : function (value) {
+    writeLong: function(value) {
         var foo = value;
         value = (value << 1) ^ (value >> 63);
         while(value & 0x7f != 0) {
@@ -267,11 +267,14 @@ BinaryEncoder.prototype = {
     },
         
     writeFixed: function(datum) {
-        var i;
+        this.writer.buffer += datum;
+        
+/*        var i;
         var len = datum.length;
+                console.log("datum ~%j~", datum);
         for (i = 0; i < len; i++) {
             this.writer.writeByte(datum[i]);
-        }
+        }*/
     },
     
     writeBytes: function (datum) {
@@ -280,8 +283,9 @@ BinaryEncoder.prototype = {
     },
     
     writeString: function(datum) {
-        var utf8 = this.utf8Encode(datum);
-        this.writeBytes(utf8);
+        //var utf8 = this.utf8Encode(datum);
+        //this.writeBytes(utf8);
+        this.writeBytes(datum);
     }
     
 }
@@ -395,10 +399,14 @@ DatumWriter.prototype = {
     buffer: "",
     idx: 0,
         
+    clear: function() {
+        buffer = "";
+        idx = 0;
+    },
+    
     writeByte: function(b) {
         this.buffer += String.fromCharCode(b);
-        //console.log(b);
-        //console.log(this.buffer);
+        //console.log("%s: %j", b, this.buffer);
         this.idx++;
     },
     
@@ -409,7 +417,8 @@ DatumWriter.prototype = {
     writeData: function(writersSchema, datum, encoder) {
         //validator.validate(writersSchema, datum);
         
-        switch(writersSchema.type) {
+        var schema = writersSchema.type ? writersSchema.type : writersSchema;
+        switch(schema) {
             case "null":    encoder.writeNull(datum); break;
             case "boolean": encoder.writeBoolean(datum); break;
             case "string":  encoder.writeString(datum); break;
@@ -437,24 +446,28 @@ DatumWriter.prototype = {
     },
     
     writeArray: function(writersSchema, datum, encoder) {
-        if (datum.length > 0) {
-            encoder.writeLong(datum.length);
-            _.each(datum, function(value) {
-                this.writeData(writersSchema.items, item, encoder);
-            });
-        }
-        encoder.writeLong(0);
+        (function(self) {
+            if (datum.length > 0) {
+                encoder.writeLong(datum.length);
+                _.each(datum, function(item) {
+                    self.writeData(writersSchema.items, item, encoder);
+                });
+            }
+            encoder.writeLong(0);
+        })(this);  
     },
     
     writeMap: function(writersSchema, datum, encoder) {
-        if (datum.length > 0) {
-            encoder.writeLong(_.size(datum));
-            _.each(writersSchema, function(value, key) {
-                encoder.writeString(key);
-                this.writeData(writersSchema, value, encoder);  
-            })
-        }
-        encoder.writeLong(0);
+        (function(self) {
+            if (_.size(datum) > 0) {
+                encoder.writeLong(_.size(datum));
+                _.each(datum, function(value, key) {
+                    encoder.writeString(key);
+                    self.writeData(writersSchema.values, value, encoder);  
+                })
+            }
+            encoder.writeLong(0);
+        })(this);
     }, 
     
     writeUnion: function(writersSchema, datum, encoder) {
@@ -465,13 +478,13 @@ DatumWriter.prototype = {
     },
     
     writeRecord: function(writersSchema, datum, encoder) {
-        var runMe = function(self) {
+        (function(self) {
             //console.log("%j",writersSchema);
             _.each(writersSchema.fields, function(field) {
                 self.writeData(typeof(field.type) == 'object' ? field.type : field, 
                                datum[field.name], encoder); 
             });
-        }(this);
+        })(this);
     }
 }
 

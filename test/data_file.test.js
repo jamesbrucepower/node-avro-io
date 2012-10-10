@@ -18,7 +18,7 @@ describe('DataFile', function(){
             var data = "the quick brown fox jumped over the lazy dogs";
             var dataFile = DataFile();
             dataFile.open(testFile, "w", schema);
-            dataFile.write(data, null, function(err) {
+            dataFile.write(data, "null", function(err) {
                 fs.existsSync(testFile).should.be.true;
                 done();
             });        

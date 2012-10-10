@@ -14,7 +14,9 @@ DataFile.prototype = {
     SYNC_SIZE: 16,
     SYNC_INTERVAL: 1000 * this.SYNC_SIZE,
     VALID_CODECS: ["null", "deflate"],
-    VALID_ENCODINGS: ["binary"],            // Not used
+    VALID_ENCODINGS: ["binary", "json"],            // Not used
+    
+    blockCount: 0,
     
     magic: function() {
         return "Obj" + String.fromCharCode(this.VERSION);
@@ -30,10 +32,10 @@ DataFile.prototype = {
             ]
     },
     
-    blockData: function(count, size, datum) {
+    blockData: function(datum) {
         return {
-            "objectCount": count,
-            "objectSize": size,
+            "objectCount": this.blockCount,
+            "objectSize": datum.length,
             "objects": datum,
             "sync": this.syncMarker 
         };
@@ -49,7 +51,7 @@ DataFile.prototype = {
     
     metaData: function(codec, schema) {
         return {
-            "avro.codec": codec,
+            "avro.codec": codec ? codec : "null",
             "avro.schema": JSON.stringify(schema)
         };
     },
@@ -93,17 +95,19 @@ DataFile.prototype = {
             'meta': this.metaData(codec, this.schema),
             'sync': this.syncMarker
         };
-        //console.log("%j",this.metaSchema());
-        //console.log(avroHeader);
-        //validator.validate(this.metaSchema(), avroHeader);
         this.writer.writeData(this.metaSchema(), avroHeader, this.encoder);
     },
     
+    writeBlock: function(data) {
+        this.writer.writeData(this.blockSchema, this.blockData(data));
+        this.blockCount++;
+    },
+    
     writeData: function(codec, data, callback) {
-        callback();
         var compressed = "";
         //console.error("before %d bytes", data.length);
         this.writer.writeData(this.schema, data, this.encoder);
+        callback();
         switch (codec) {
             case "null": compressed = data; break;
             case "deflate": {
@@ -131,13 +135,14 @@ DataFile.prototype = {
     write: function(data, codec, callback) {
         
         (function(self) {
-            if (codec && this.VALID_CODECS.indexOf(codec) == -1)
+            if (codec && self.VALID_CODECS.indexOf(codec) == -1)
                 throw new Error("Unsupported codec %s", codec);
             
             self.writeHeader(codec);
+            self.writer.clear();
             //console.log("%j", self.writer.buffer);
             self.writeData(codec, data, function(err, data) {
-                console.log("%j", self.writer.buffer);
+                //console.log("%j", self.writer.buffer);
                 
                 fs.writeFileSync(self.path, self.writer.buffer, 'binary');
                 callback(err);            
