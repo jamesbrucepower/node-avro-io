@@ -8,14 +8,15 @@ describe('DataFile', function(){
     var testFile;
     before(function(){
         testFile = __dirname + "/../data/test.avro";
-    })
+    });
     after(function(){
-        //fs.unlinkSync(testFile);
-    })
+        fs.unlinkSync(testFile);
+    });
     describe('write()', function() {
         it('should write a schema and associated data to a file', function(done) {
             var schema = { "type": "string" };
-            var data = "testing";
+            var data = "the quick brown fox jumped over the lazy dogs";
+            console.error(Object.getOwnPropertyNames(DataFile));
             var dataFile = new DataFile(testFile, "w", schema);
             dataFile.write(data, null, function(err) {
                 fs.existsSync(testFile).should.be.true;
@@ -23,7 +24,14 @@ describe('DataFile', function(){
             });        
         });
     });
-    describe('read', function() {
-        
+    describe('read()', function() {
+        it('should read an avro data file', function(done){
+            var schema = { "type": "string" };
+            var dataFile = DataFile(testFile, "r", schema);
+            dataFile.read(function(err, data) {
+                data.should.equal("the quick brown fox jumped over the lazy dogs");
+                done();
+            });
+        });
     });
 })

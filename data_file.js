@@ -3,14 +3,18 @@ var zlib = require("zlib");
 var validator = require("./validator");
 var IO = require("./io");
 
-var DataFile = function(path, flags, schema) {
+function DataFile(path, flags, schema) {
+    
+    //if ((this instanceof arguments.callee) === false)
+    //    return new arguments.callee(path, flags, schema);
+        
     this.path = path;
     this.flags = flags;
     this.schema = schema;
     this.writer = IO.DatumWriter(schema);
     this.reader = IO.DatumReader();
     this.encoder = IO.BinaryEncoder(this.writer);
-};
+}
 
 DataFile.prototype = {
     
@@ -32,6 +36,15 @@ DataFile.prototype = {
                {"name": "objects", "type": "bytes" },
                {"name": "sync", "type": {"type": "fixed", "name": "Sync", "size": this.SYNC_SIZE}}
             ]
+    },
+    
+    blockData: function(count, size, datum) {
+        return {
+            "objectCount": count,
+            "objectSize": size,
+            "objects": datum,
+            "sync": this.syncMarker 
+        }
     },
     
     generateSyncMarker: function(size) {
@@ -82,17 +95,18 @@ DataFile.prototype = {
     },
     
     writeHeader: function(codec) {
+        this.syncMarker = this.generateSyncMarker(this.SYNC_SIZE);
         var avroHeader = {
             'magic': this.magic(),
             'meta': this.metaData(codec, this.schema),
-            'sync': this.generateSyncMarker(this.SYNC_SIZE)
+            'sync': this.syncMarker
         }
-        console.log("%j",this.metaSchema());
-        console.log(avroHeader);
+        //console.log("%j",this.metaSchema());
+        //console.log(avroHeader);
         this.writer.writeData(this.metaSchema(), avroHeader, this.encoder);
     },
     
-    writeData: function(codec, data) {
+    writeData: function(codec, data, callback) {
         return;
         compressed = "";
         console.error("before %d bytes", data.length);
@@ -115,14 +129,20 @@ DataFile.prototype = {
             throw new Error("Unsupported codec %s", codec);
             
         this.writeHeader(codec);
-        this.writeData(codec, data);
+        this.writeData(codec, data, function() {
+            fs.writeFileSync(this.path, this.writer.buffer, 'binary');
+            callback();            
+        });
         
-        fs.writeFileSync(this.path, this.writer.buffer, 'binary');
-        callback();
+    },
+    
+    read: function(callback) {
+        
+        callback(null, "the quick brown fox jumped over the lazy dogs");
     }
 }
-
-if (typeof(exports) !== 'undefined') {
-    exports = DataFile;
-}
+console.error(Object.getOwnPropertyNames(DataFile));
+//if (typeof(exports) !== 'undefined') {
+exports = DataFile;
+    //}
     
