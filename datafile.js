@@ -1,6 +1,6 @@
 var fs = require("fs");
 var zlib = require("zlib");
-var validator = require("./validator");
+var validator = require("./validator").Validator;
 var IO = require("./io");
 
 var DataFile = function() {
@@ -95,21 +95,21 @@ DataFile.prototype = {
         };
         //console.log("%j",this.metaSchema());
         //console.log(avroHeader);
-        
+        //validator.validate(this.metaSchema(), avroHeader);
         this.writer.writeData(this.metaSchema(), avroHeader, this.encoder);
     },
     
     writeData: function(codec, data, callback) {
         callback();
         var compressed = "";
-        console.error("before %d bytes", data.length);
+        //console.error("before %d bytes", data.length);
         this.writer.writeData(this.schema, data, this.encoder);
         switch (codec) {
             case "null": compressed = data; break;
             case "deflate": {
                 zlib.deflate(data, function(err, buffer) {
                     compressed = buffer;
-                    console.error("after %d bytes", compressed.length);
+                    //console.error("after %d bytes", compressed.length);
                     callback(null, compressed);
                 });
                 break;
@@ -137,7 +137,8 @@ DataFile.prototype = {
             self.writeHeader(codec);
             //console.log("%j", self.writer.buffer);
             self.writeData(codec, data, function(err, data) {
-                //console.log("%j", self.writer.buffer);
+                console.log("%j", self.writer.buffer);
+                
                 fs.writeFileSync(self.path, self.writer.buffer, 'binary');
                 callback(err);            
             });

@@ -409,7 +409,6 @@ DatumWriter.prototype = {
     writeData: function(writersSchema, datum, encoder) {
         //validator.validate(writersSchema, datum);
         
-        console.log("%j", writersSchema.type);
         switch(writersSchema.type) {
             case "null":    encoder.writeNull(datum); break;
             case "boolean": encoder.writeBoolean(datum); break;
@@ -428,7 +427,7 @@ DatumWriter.prototype = {
             case "errors":
             case "request": this.writeRecord(writersSchema, datum, encoder); break;
             default:
-                throw new Error("Unknown type: " + writersSchema.type);
+                throw new Error("Unknown type: " + writersSchema.type + " for data " + datum + ", schema was " + writersSchema);
         }
     },
     
@@ -467,8 +466,10 @@ DatumWriter.prototype = {
     
     writeRecord: function(writersSchema, datum, encoder) {
         var runMe = function(self) {
+            //console.log("%j",writersSchema);
             _.each(writersSchema.fields, function(field) {
-                self.writeData(field.type, datum[field.name], encoder); 
+                self.writeData(typeof(field.type) == 'object' ? field.type : field, 
+                               datum[field.name], encoder); 
             });
         }(this);
     }
