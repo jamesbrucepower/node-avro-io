@@ -17,7 +17,7 @@ describe('DataFile', function(){
             var schema = { "type": "string" };
             var data = "the quick brown fox jumped over the lazy dogs";
             console.error(Object.getOwnPropertyNames(DataFile));
-            var dataFile = new DataFile(testFile, "w", schema);
+            var dataFile = DataFile.open(testFile, "w", schema);
             dataFile.write(data, null, function(err) {
                 fs.existsSync(testFile).should.be.true;
                 done();
@@ -27,7 +27,7 @@ describe('DataFile', function(){
     describe('read()', function() {
         it('should read an avro data file', function(done){
             var schema = { "type": "string" };
-            var dataFile = DataFile(testFile, "r", schema);
+            var dataFile = DataFile.open(testFile, "r", schema);
             dataFile.read(function(err, data) {
                 data.should.equal("the quick brown fox jumped over the lazy dogs");
                 done();

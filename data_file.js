@@ -3,18 +3,10 @@ var zlib = require("zlib");
 var validator = require("./validator");
 var IO = require("./io");
 
-function DataFile(path, flags, schema) {
-    
-    //if ((this instanceof arguments.callee) === false)
-    //    return new arguments.callee(path, flags, schema);
-        
-    this.path = path;
-    this.flags = flags;
-    this.schema = schema;
-    this.writer = IO.DatumWriter(schema);
-    this.reader = IO.DatumReader();
-    this.encoder = IO.BinaryEncoder(this.writer);
-}
+var DataFile = function() {
+    if ((this instanceof arguments.callee) === false)
+        return new arguments.callee();
+};
 
 DataFile.prototype = {
     
@@ -49,7 +41,7 @@ DataFile.prototype = {
     
     generateSyncMarker: function(size) {
         var marker = "";
-        for (i = 0; i < size; i++) {
+        for (var i = 0; i < size; i++) {
             marker += String.fromCharCode(Math.floor(Math.random() * 0xFF));
         }
         return marker;
@@ -117,10 +109,20 @@ DataFile.prototype = {
                 zlib.deflate(data, function(err, buffer) {
                     compressed = buffer;
                     console.error("after %d bytes", compressed.length);
+                    callback(null, compressed);
                 });
                 break;
             }
         }
+    },
+    
+    open: function(path, flags, schema) {
+        this.path = path;
+        this.flags = flags;
+        this.schema = schema;
+        this.writer = IO.DatumWriter(schema);
+        this.reader = IO.DatumReader();
+        this.encoder = IO.BinaryEncoder(this.writer);
     },
     
     write: function(data, codec, callback) {
@@ -129,7 +131,7 @@ DataFile.prototype = {
             throw new Error("Unsupported codec %s", codec);
             
         this.writeHeader(codec);
-        this.writeData(codec, data, function() {
+        this.writeData(codec, data, function(err, data) {
             fs.writeFileSync(this.path, this.writer.buffer, 'binary');
             callback();            
         });
@@ -137,12 +139,12 @@ DataFile.prototype = {
     },
     
     read: function(callback) {
-        
         callback(null, "the quick brown fox jumped over the lazy dogs");
     }
 }
+
 console.error(Object.getOwnPropertyNames(DataFile));
-//if (typeof(exports) !== 'undefined') {
-exports = DataFile;
-    //}
+if (typeof(exports) !== 'undefined') {
+    exports = DataFile;
+}
     
