@@ -89,16 +89,16 @@ DataFile.prototype = {
         };
     },
     
-    writeHeader: function(codec) {
+    writeHeader: function() {
         this.syncMarker = this.generateSyncMarker(this.SYNC_SIZE);
         var avroHeader = {
             'magic': this.magic(),
-            'meta': this.metaData(codec, this.schema),
+            'meta': this.metaData(this.options.codec, this.schema),
             'sync': this.syncMarker
         };
         this.writer.writeData(this.metaSchema(), avroHeader, this.encoder);
-        this.stream.write(this.writer.buffer,'binary');
-        this.writer.truncate();
+        fs.writeSync(this.fd, this.encoder.buffer(), 0, this.encoder.idx);
+        this.encoder.flush();
     },
     
     compressData: function(data, callback) {
@@ -113,16 +113,16 @@ DataFile.prototype = {
         }
     },
     
-    writeBlock: function(data) {
+    writeBlock: function(data, callback) {
         if (this.blockCount > 0) {
-            var bytes = this.compressData(data);
-            this.writer.truncate();
-            this.writer.writeData(this.blockSchema, this.blockData(bytes), this.encoder);
-            console.log(this.blockData(bytes));
-            console.log("[%j]",this.writer.buffer);
-            this.stream.write(this.writer.buffer,'binary');
-            this.writer.truncate();
-            this.blockCount = 0;
+            var buffer = this.compressData(data);
+                this.encoder.flush();
+                this.writer.writeData(this.blockSchema, this.blockData(buffer), this.encoder);
+                fs.writeSync(this.fd, this.encoder.buffer(), 0, this.encoder.idx);
+                this.encoder.flush();
+                this.blockCount = 0;    
+//                callback();            
+
         }
     },
     
@@ -130,27 +130,29 @@ DataFile.prototype = {
         this.writer.writeData(this.schema, data, this.encoder);
         this.blockCount++;
         
-        if (this.writer.buffer.length > this.SYNC_INTERVAL) {
-            this.writeBlock(this.writer.buffer);
-            this.writer.truncate();
+        if (this.encoder.idx > this.SYNC_INTERVAL) {
+            this.writeBlock(this.encoder.buffer());
         }
     },
     
     open: function(path, schema, options) {
-        this.schema = schema;
-        this.writer = IO.DatumWriter(schema);
-        this.reader = IO.DatumReader();
-        this.encoder = IO.BinaryEncoder(this.writer);
+        this.schema = schema;        
         this.options = _.extend({ codec: "null", flags: 'r', encoding: null, mode: 0666 }, options);
 
         if (this.VALID_CODECS.indexOf(this.options.codec) == -1)
             throw new Error("Unsupported codec " + this.options.codec);
             
         switch (this.options.flags) {
-            case "r": this.stream = fs.createReadStream(path, options); break; 
+            case "r": {
+                this.reader = IO.DatumReader();
+                this.fd = fs.openSync(path, this.options.flags); 
+                break; 
+            }
             case "w": {
-                this.stream = fs.createWriteStream(path, options); 
-                this.writeHeader(this.options.codec);
+                this.encoder = IO.BinaryEncoder();
+                this.writer = IO.DatumWriter(schema);
+                this.fd = fs.openSync(path, this.options.flags); 
+                this.writeHeader();
                 break;
             }
         }
@@ -158,13 +160,13 @@ DataFile.prototype = {
     },
         
     read: function(callback) {
-        callback(null, "the quick brown fox jumped over the lazy dogs");
+        callback(null, "The quick brown fox jumped over the lazy dogs");
     },
     
     close: function() {
-        if (this.writer.buffer.length > 0)
-            this.writeBlock(this.writer.buffer);
-        this.stream.end();
+        if (this.blockCount > 0)
+            this.writeBlock(this.encoder.buffer());
+        fs.closeSync(this.fd);
     }
 }
 

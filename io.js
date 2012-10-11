@@ -1,12 +1,15 @@
 var _ = require("underscore");
 var validator = require('./validator').Validator;
 
+var DEFAULT_BUFFER_SIZE = 2048;
+
 var BinaryDecoder = function(reader) {
     
     if ((this instanceof arguments.callee) === false)
         return new arguments.callee(reader);
         
     this.reader = reader;
+    this.buf = new Buffer(DEFAULT_BUFFER_SIZE);
 };
 
 BinaryDecoder.prototype = {
@@ -144,15 +147,31 @@ BinaryDecoder.prototype = {
     }
 }
 
-var BinaryEncoder = function(writer) {
+var BinaryEncoder = function() {
     
     if ((this instanceof arguments.callee) === false)
-        return new arguments.callee(writer);
+        return new arguments.callee();
         
-    this.writer = writer;
+    this.buf = new Buffer(DEFAULT_BUFFER_SIZE);
+    this.idx = 0;
 };
 
 BinaryEncoder.prototype = {   
+    
+    flush: function() {
+        this.idx = 0;
+    },
+    
+    buffer: function() {
+        return this.buf.slice(0, this.idx);
+    },
+    
+    writeByte: function(byte) {
+        if (this.idx == DEFAULT_BUFFER_SIZE) {
+            throw new Error("Not yet implemented");
+        }
+        this.buf[this.idx++] = byte;
+    },
     
     utf8Encode: function (str) {
         var len = str.length;
@@ -186,7 +205,7 @@ BinaryEncoder.prototype = {
     },
     
     writeBoolean : function(value) {
-        this.writer.writeByte(value ? 1 : 0);
+        this.writeByte(value ? 1 : 0);
     },
 	
     writeInt: function(value) {
@@ -194,13 +213,12 @@ BinaryEncoder.prototype = {
     },
 
     writeLong: function(value) {
-        var foo = value;
         value = (value << 1) ^ (value >> 63);
-        while(value & 0x7f != 0) {
-            this.writer.writeByte((value & 0x7f) | 0x80);
+        while((value & 0x7f) != 0) {
+            this.writeByte((value & 0x7f) | 0x80);
             value >>= 7;
         }
-        this.writer.writeByte(value);
+        this.writeByte(value);
     },
 
     writeFloat : function (f) {
@@ -255,10 +273,10 @@ BinaryEncoder.prototype = {
         }
 	    
         // FIXME: endian consideration necessary?
-        this.writer.writeByte(out);
-        this.writer.writeByte(out >> 8);
-        this.writer.writeByte(out >> 16);
-        this.writer.writeByte(out >> 24);
+        this.writeByte(out);
+        this.writeByte(out >> 8);
+        this.writeByte(out >> 16);
+        this.writeByte(out >> 24);
     },
 
     writeDouble: function (value) {
@@ -267,25 +285,27 @@ BinaryEncoder.prototype = {
     },
         
     writeFixed: function(datum) {
-        this.writer.buffer += datum;
-        
-/*        var i;
         var len = datum.length;
-                console.log("datum ~%j~", datum);
-        for (i = 0; i < len; i++) {
-            this.writer.writeByte(datum[i]);
-        }*/
+        for (var i = 0; i < len; i++) {
+            this.writeByte(datum.charCodeAt(i));
+        }
     },
     
-    writeBytes: function (datum) {
+    writeBytes: function(datum) {
         this.writeLong(datum.length);
-        this.writeFixed(datum);
+        if (datum instanceof Buffer) {
+            console.log("Going to byte a buffer %d -> %d", this.idx, datum.length);
+            datum.copy(this.buf, this.idx);
+            this.idx += datum.length;
+        } else 
+            this.writeFixed(datum);
     },
     
     writeString: function(datum) {
-        //var utf8 = this.utf8Encode(datum);
-        //this.writeBytes(utf8);
-        this.writeBytes(datum);
+        var size = Buffer.byteLength(datum);
+        this.writeLong(size);
+        this.buf.write(datum, this.idx);
+        this.idx += size;
     }
     
 }
@@ -310,7 +330,7 @@ DatumReader.prototype = {
     
     read: function(decoder){
         if (!this.readersSchema)
-            this.readersSchema = this.writersSchema
+            this.readersSchema = this.readersSchema
         this.readData(this.writersSchema, this.readersSchema, decoder)
     },
     
@@ -395,20 +415,6 @@ var DatumWriter = function(writersSchema) {
 };
 
 DatumWriter.prototype = {
-    
-    buffer: "",
-    idx: 0,
-        
-    truncate: function() {
-        this.buffer = "";
-        this.idx = 0;
-    },
-    
-    writeByte: function(b) {
-        this.buffer += String.fromCharCode(b);
-        //console.log("%s: %j", b, this.buffer);
-        this.idx++;
-    },
     
     write: function(datum, encoder) {
         this.writeData(this.writersSchema, datum, encoder);

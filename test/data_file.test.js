@@ -14,8 +14,8 @@ describe('DataFile', function(){
     });
     describe('write()', function() {
         it('should write a schema and associated data to a file', function() {
-            var schema = { "type": "string" };
-            var data = "the quick brown fox jumped over the lazy dogs";
+            var schema = "string";  //{ "type": "string" };
+            var data = "The quick brown fox jumped over the lazy dogs";
             var dataFile = DataFile();
             dataFile.open(testFile, schema, { flags: 'w' });
             dataFile.write(data);
@@ -31,7 +31,7 @@ describe('DataFile', function(){
             var dataFile = DataFile()
             dataFile.open(testFile, schema, { flags: 'r' });
             dataFile.read(function(err, data) {
-                data.should.equal("the quick brown fox jumped over the lazy dogs");
+                data.should.equal("The quick brown fox jumped over the lazy dogs");
                 done();
             });
         });

@@ -11,9 +11,9 @@ describe('IO', function(){
                 "type": "int"
             };
             var writer = IO.DatumWriter(schema);
-            var encoder = IO.BinaryEncoder(writer);
+            var encoder = IO.BinaryEncoder();
             writer.write(-64, encoder);
-            writer.buffer.should.equal("ÿ\u0000");          
+            encoder.buffer().toString().should.equal("ÿ\u0000");          
         });
         it('should encode a string as a long of its length, followed by the utf8 encoded string', function(){
             var schema = {
@@ -22,7 +22,7 @@ describe('IO', function(){
             var writer = IO.DatumWriter(schema);
             var encoder = IO.BinaryEncoder(writer);
             writer.write("testing", encoder);
-            writer.buffer.should.equal("\u000etesting");          
+            encoder.buffer().toString().should.equal("\u000etesting");          
         });
         it('should encode a record as the values of its fields in the order of declaration', function(){
             var schema = {
@@ -39,7 +39,7 @@ describe('IO', function(){
             };
             validator.validate(schema, record);
             writer.write(record, encoder);
-            writer.buffer.should.equal("\u0002\u0006abc");
+            encoder.buffer().toString().should.equal("\u0002\u0006abc");
         });
         it('should encode a union as a long of the zero-based schema position, followed by the value according to the schema at that position', function(){
          /*   var schema = [
