@@ -1,5 +1,6 @@
 var fs = require("fs");
 var zlib = require("zlib");
+var _ = require("underscore");
 var validator = require("./validator").Validator;
 var IO = require("./io");
 
@@ -96,62 +97,74 @@ DataFile.prototype = {
             'sync': this.syncMarker
         };
         this.writer.writeData(this.metaSchema(), avroHeader, this.encoder);
+        this.stream.write(this.writer.buffer,'binary');
+        this.writer.truncate();
     },
     
-    writeBlock: function(data) {
-        this.writer.writeData(this.blockSchema, this.blockData(data));
-        this.blockCount++;
-    },
-    
-    writeData: function(codec, data, callback) {
-        var compressed = "";
-        //console.error("before %d bytes", data.length);
-        this.writer.writeData(this.schema, data, this.encoder);
-        callback();
-        switch (codec) {
-            case "null": compressed = data; break;
+    compressData: function(data, callback) {
+        switch(this.options.codec) {
+            case "null": return data; break;
             case "deflate": {
-                zlib.deflate(data, function(err, buffer) {
-                    compressed = buffer;
-                    //console.error("after %d bytes", compressed.length);
-                    callback(null, compressed);
-                });
+                zlib.deflateRaw(data, function(err, buffer) {
+                    callback(err, buffer);
+                });                
                 break;
             }
         }
     },
     
-    open: function(path, flags, schema) {
-        this.path = path;
-        this.flags = flags;
+    writeBlock: function(data) {
+        if (this.blockCount > 0) {
+            var bytes = this.compressData(data);
+            this.writer.truncate();
+            this.writer.writeData(this.blockSchema, this.blockData(bytes), this.encoder);
+            console.log(this.blockData(bytes));
+            console.log("[%j]",this.writer.buffer);
+            this.stream.write(this.writer.buffer,'binary');
+            this.writer.truncate();
+            this.blockCount = 0;
+        }
+    },
+    
+    write: function(data) {
+        this.writer.writeData(this.schema, data, this.encoder);
+        this.blockCount++;
+        
+        if (this.writer.buffer.length > this.SYNC_INTERVAL) {
+            this.writeBlock(this.writer.buffer);
+            this.writer.truncate();
+        }
+    },
+    
+    open: function(path, schema, options) {
         this.schema = schema;
         this.writer = IO.DatumWriter(schema);
         this.reader = IO.DatumReader();
         this.encoder = IO.BinaryEncoder(this.writer);
-        
+        this.options = _.extend({ codec: "null", flags: 'r', encoding: null, mode: 0666 }, options);
+
+        if (this.VALID_CODECS.indexOf(this.options.codec) == -1)
+            throw new Error("Unsupported codec " + this.options.codec);
+            
+        switch (this.options.flags) {
+            case "r": this.stream = fs.createReadStream(path, options); break; 
+            case "w": {
+                this.stream = fs.createWriteStream(path, options); 
+                this.writeHeader(this.options.codec);
+                break;
+            }
+        }
         return this;
     },
-    
-    write: function(data, codec, callback) {
         
-        (function(self) {
-            if (codec && self.VALID_CODECS.indexOf(codec) == -1)
-                throw new Error("Unsupported codec %s", codec);
-            
-            self.writeHeader(codec);
-            self.writer.clear();
-            //console.log("%j", self.writer.buffer);
-            self.writeData(codec, data, function(err, data) {
-                //console.log("%j", self.writer.buffer);
-                
-                fs.writeFileSync(self.path, self.writer.buffer, 'binary');
-                callback(err);            
-            });
-        })(this);
-    },
-    
     read: function(callback) {
         callback(null, "the quick brown fox jumped over the lazy dogs");
+    },
+    
+    close: function() {
+        if (this.writer.buffer.length > 0)
+            this.writeBlock(this.writer.buffer);
+        this.stream.end();
     }
 }
 

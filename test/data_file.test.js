@@ -13,22 +13,23 @@ describe('DataFile', function(){
         //fs.unlinkSync(testFile);
     });
     describe('write()', function() {
-        it('should write a schema and associated data to a file', function(done) {
+        it('should write a schema and associated data to a file', function() {
             var schema = { "type": "string" };
             var data = "the quick brown fox jumped over the lazy dogs";
             var dataFile = DataFile();
-            dataFile.open(testFile, "w", schema);
-            dataFile.write(data, "null", function(err) {
-                fs.existsSync(testFile).should.be.true;
-                done();
-            });        
+            dataFile.open(testFile, schema, { flags: 'w' });
+            dataFile.write(data);
+            dataFile.write(data);
+            dataFile.write(data);
+            dataFile.close();
+            fs.existsSync(testFile).should.be.true;
         });
     });
     describe('read()', function() {
         it('should read an avro data file', function(done){
             var schema = { "type": "string" };
             var dataFile = DataFile()
-            dataFile.open(testFile, "r", schema);
+            dataFile.open(testFile, schema, { flags: 'r' });
             dataFile.read(function(err, data) {
                 data.should.equal("the quick brown fox jumped over the lazy dogs");
                 done();

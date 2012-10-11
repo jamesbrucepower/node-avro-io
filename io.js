@@ -399,9 +399,9 @@ DatumWriter.prototype = {
     buffer: "",
     idx: 0,
         
-    clear: function() {
-        buffer = "";
-        idx = 0;
+    truncate: function() {
+        this.buffer = "";
+        this.idx = 0;
     },
     
     writeByte: function(b) {
@@ -417,6 +417,7 @@ DatumWriter.prototype = {
     writeData: function(writersSchema, datum, encoder) {
         //validator.validate(writersSchema, datum);
         
+        //console.log("%j:%j", datum, writersSchema)
         var schema = writersSchema.type ? writersSchema.type : writersSchema;
         switch(schema) {
             case "null":    encoder.writeNull(datum); break;
