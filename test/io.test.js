@@ -87,6 +87,58 @@ describe('IO', function(){
                      0x65, 0x64])).should.be.true;
             })
         });
+    });
+    describe('BinaryDecoder()', function(){
+        describe('readNull()', function(){
+            it('should ', function(){
+              
+            });
+        });
+        describe('readByte()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readBoolean()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readLong()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readFloat()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readDouble()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readFixed()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readBytes()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readString()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readEnum()', function(){
+            it('should ', function(){
+              
+            })
+        })
     })
     describe('DatumWriter()', function() {
         it('should be initiated and store a schema', function(){
@@ -240,4 +292,41 @@ describe('IO', function(){
             });
         });
     });
+    describe('DatumReader()', function(){
+        describe('read()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readData()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readEnum()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readArray()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readMap()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readUnion()', function(){
+            it('should ', function(){
+              
+            })
+        })
+        describe('readRecord()', function(){
+            it('should ', function(){
+              
+            })
+        })
+    })
 })
