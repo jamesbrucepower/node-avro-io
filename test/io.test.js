@@ -86,13 +86,27 @@ describe('IO', function(){
             })
         });
     });
-    describe('BinaryDecoder()', function(){
+    describe('decoder()', function(){
         var decoder = null;
         beforeEach(function(){
             decoder = IO.BinaryDecoder();
         })
         afterEach(function(){
             decoder = null;
+        })
+        describe('setBuffer()', function(){
+            it('should set the buffer to the one passed in as a parameter', function(){
+                decoder.setBuffer(new Buffer([4]));
+                (decoder.buf instanceof Buffer).should.be.true;
+            });
+            it('should throw an error if a Buffer is not provided as a parameter', function(){
+                (function() {
+                    decoder.setBuffer("breakme");                    
+                }).should.throwError();
+                (function() {
+                    decoder.setBuffer();                    
+                }).should.throwError();
+            })
         })
         describe('readNull()', function(){
             it('should decode and return a null', function(){
