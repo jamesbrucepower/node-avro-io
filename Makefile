@@ -22,7 +22,7 @@ avro: $(AVRO_SRCS) avro-tools
 clean:
 	-@[ -e "coverage.html" ] && rm coverage.html
 	-@[ -d "lib-cov" ] && rm -rf lib-cov
-	-@[ -e "test/data/*.avro" ] && rm test/data/*.avro
+	-@[ -e "test/data/test.avro" ] && rm test/data/*.avro
 	-@[ -d "tools" ] && rm -r tools
 	
 .PHONY: test
