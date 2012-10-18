@@ -1,6 +1,6 @@
 PATH := ${PATH}:/usr/local/bin:./node_modules/.bin/
 AVRO_TOOLS_JAR = tools/avro-tools-1.7.2.jar
-REPORTER = dot
+REPORTER = spec
 AVRO_SRCS=$(wildcard test/data/*.avro)
 
 avro-tools: 

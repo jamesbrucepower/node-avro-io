@@ -12,6 +12,9 @@ describe('DataFile', function(){
         if (fs.existsSync(testFile))
             fs.unlinkSync(testFile);
     });
+    after(function(){
+        fs.unlinkSync(testFile);
+    })
     describe('open()', function(){
         it('should open a file for writing if passed a w flag and write an avro header', function(done){
             var schema = "int";
@@ -26,11 +29,14 @@ describe('DataFile', function(){
             var schema = "int";
             dataFile.open(testFile, schema, { flags: 'r' });
             dataFile.read(function(err, data) {
-                should.not.exist(err);
-                dataFile.close();
-                data.should.equal(1);
-                fs.unlinkSync(testFile); 
-                done();               
+                if (err) 
+                    done(err);
+                else {
+                    dataFile.close();
+                    data.should.equal(1);
+                    fs.unlinkSync(testFile); 
+                    done();               
+                }
             });
         });
         it('should throw an error if an unsupported codec is passed as an option', function(){
