@@ -3,7 +3,7 @@ var should = require('should');
 var _ = require('underscore');
 
 var IO = require(__dirname + "/../lib/io");
-var validator = require(__dirname + "/../lib/validator").Validator;
+var validator = require(__dirname + "/../other/validator").Validator;
 require('buffertools');
 
 describe('IO', function(){

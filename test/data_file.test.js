@@ -15,6 +15,16 @@ describe('DataFile', function(){
     after(function(){
         fs.unlinkSync(testFile);
     })
+    describe('magic()', function(){
+        it('should return a magic string of 4 bytes representing an avro marker', function(){
+            dataFile.magic().should.equal("Obj\u0001");          
+        });
+    });
+    describe('generateSyncMarker()', function(){
+        it('should generate a 16 byte sequence to be used as a marker', function(){
+            dataFile.generateSyncMarker(16).length.should.equal(16);
+        })
+    })
     describe('open()', function(){
         it('should open a file for writing if passed a w flag and write an avro header', function(done){
             var schema = "int";
