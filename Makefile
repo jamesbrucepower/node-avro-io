@@ -29,4 +29,6 @@ clean:
 	-@rm test/data/*.avro
 	-@rm -rf tools
 	
+all: avro coverage test
+	
 .PHONY: test

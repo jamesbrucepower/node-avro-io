@@ -86,7 +86,7 @@ describe('IO', function(){
             })
         });
     });
-    describe('decoder()', function(){
+    describe('BinaryDecoder()', function(){
         var decoder = null;
         beforeEach(function(){
             decoder = IO.BinaryDecoder();
@@ -210,8 +210,12 @@ describe('IO', function(){
                 decoder.setBuffer(new Buffer([0x04, 0x4F, 0x4B]));
                 decoder.skipString();
                 decoder.idx.should.equal(3);
-                // TODO: add test for skipping UTF-8 encoded string
-            })
+            });
+            it('should skip a long followed by a UTF-8 encoded string', function(){
+                decoder.setBuffer(new Buffer([0x0a, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c]));
+                decoder.skipString();
+                decoder.idx.should.equal(6);
+            });
         })
     })
     describe('DatumWriter()', function() {
@@ -408,6 +412,19 @@ describe('IO', function(){
         describe('readRecord()', function(){
             it('should ', function(){
                 should.exist(null);              
+            })
+        });
+        describe('skipData()', function(){
+            it('should skip skip a specified field type', function(){
+/*                var schema = {
+                    "type": "enum",
+                    "name": "phonetics",
+                    "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
+                };                
+                var decoder = IO.BinaryDecoder();
+                decoder.setBuffer(new Buffer([0x06]));
+                var reader = IO.DatumReader(schema, schema, decoder);
+                reader.skipData(schema, null, decoder).should.equal("Delta");*/
             })
         })
     })
