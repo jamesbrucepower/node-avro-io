@@ -425,6 +425,7 @@ describe('IO', function(){
                 decoder.setBuffer(new Buffer([0x06]));
                 var reader = IO.DatumReader(schema, schema, decoder);
                 reader.skipData(schema, null, decoder).should.equal("Delta");*/
+                should.exist(null);
             })
         })
     })

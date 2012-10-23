@@ -3,16 +3,16 @@
   "version": "0.0.1",
   "dependencies": {
     "underscore": "latest",
-    "underscore": "snappy"
+    "snappy": "latest"
   },
   "devDependencies": {
     "mocha": "latest",
     "should": "latest",
-    "jscoverage": "~0.2.4",
+    "jscoverage": "latest",
     "buffertools": "latest"
   },
   "engines": {
-    "node": "0.8.x",
-    "npm": "1.1.x"
+    "node": "latest",
+    "npm": "latest"
   }
 }
