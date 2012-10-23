@@ -1,8 +1,8 @@
 var DataFile = require(__dirname + "/lib/datafile");
 
+var fileName = process.argv[2];
 dataFile = DataFile();
-dataFile.open("ni.avro");
-//dataFile.open("test/data/ni-acs-uat-auth-i-0a912141.cloud-newsint.co.uk.1350640812592");
+dataFile.open(fileName);
 dataFile.read(function(err, data) {
     if (err) 
         console.error(err);
