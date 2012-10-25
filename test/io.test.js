@@ -1,10 +1,14 @@
 var assert = require("assert");
 var should = require('should');
 var _ = require('underscore');
-
-var IO = require(__dirname + "/../lib/io");
 var validator = require(__dirname + "/../other/validator").Validator;
 require('buffertools');
+
+var libpath = process.env["MOCHA_COV"] ? __dirname + "/../lib-cov/" : __dirname + "/../lib/";
+
+var IO = require(libpath + "/../lib/io");
+var Avro = require(libpath + "/../lib/datafile");
+
 
 describe('IO', function(){
     describe('BinaryEncoder()', function(){
@@ -87,14 +91,16 @@ describe('IO', function(){
         });
     });
     describe('BinaryDecoder()', function(){
-        var decoder = null;
+        var decoder = null, reader = null;
         beforeEach(function(){
-            decoder = IO.BinaryDecoder();
+            reader = Avro.Reader();
+            decoder = IO.BinaryDecoder(reader);
         })
         afterEach(function(){
+            reader = null;
             decoder = null;
         })
-        describe('setBuffer()', function(){
+/*        describe('setBuffer()', function(){
             it('should set the buffer to the one passed in as a parameter', function(){
                 decoder.setBuffer(new Buffer([4]));
                 (decoder.buf instanceof Buffer).should.be.true;
@@ -107,7 +113,7 @@ describe('IO', function(){
                     decoder.setBuffer();                    
                 }).should.throwError();
             })
-        })
+        })*/
         describe('readNull()', function(){
             it('should decode and return a null', function(){
                 should.not.exist(decoder.readNull());
@@ -115,50 +121,50 @@ describe('IO', function(){
         });
         describe('readByte()', function(){
             it('should decode and return an octet from the current position of the buffer', function(){
-                decoder.setBuffer(new Buffer([0x55]));
+                reader.write(new Buffer([0x55]));
                 decoder.readByte().should.equal(0x55);
             })
         })
         describe('readBoolean()', function(){
             it('should decode and return true or false', function(){
-                decoder.setBuffer(new Buffer([0x01, 0x00]));
+                reader.write(new Buffer([0x01, 0x00]));
                 decoder.readBoolean().should.be.true;
                 decoder.readBoolean().should.be.false;
             })
         })
         describe('readLong()', function(){
             it('should decode and return a long', function(){
-                decoder.setBuffer(new Buffer([0x94, 0x02]));
+                reader.write(new Buffer([0x94, 0x02]));
                 decoder.readLong().should.equal(138);
             })
         })
         describe('readFloat()', function(){
             it('should decode and return a 32bit float', function(){
-                decoder.setBuffer(new Buffer([0x99, 0xf8, 0xa9, 0x3f]));
+                reader.write(new Buffer([0x99, 0xf8, 0xa9, 0x3f]));
                 decoder.readFloat().toFixed(7).should.equal('1.3278991');
             })
         })
         describe('readDouble()', function(){
             it('should decode and return a 64bit float', function(){
-                decoder.setBuffer(new Buffer([0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40]));
+                reader.write(new Buffer([0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40]));
                 decoder.readDouble().should.equal(8.98928196620122323);
             })
         })
         describe('readFixed()', function(){
             it('should decode and return a fixed number of bytes', function(){
-                decoder.setBuffer(new Buffer([0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC]));
+                reader.write(new Buffer([0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC]));
                 decoder.readFixed(8).equals(new Buffer([0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC])).should.be.true;
             })
         })
         describe('readBytes()', function(){
             it('should decode and return a set of bytes', function(){
-                decoder.setBuffer(new Buffer([0x08, 0x11, 0x22, 0x33, 0x44]));
+                reader.write(new Buffer([0x08, 0x11, 0x22, 0x33, 0x44]));
                 decoder.readBytes().equals(new Buffer([0x11, 0x22, 0x33, 0x44]));
             })
         })
         describe('readString()', function(){
             it('should decode and return a string', function(){
-                decoder.setBuffer(new Buffer([0x2c, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c, 0x20,
+                reader.write(new Buffer([0x2c, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c, 0x20,
                      0x72, 0x69, 0x67, 0x68, 0x74, 0x73, 0x20, 0x72, 0x65, 0x73, 0x65, 0x72, 0x76, 
                      0x65, 0x64]));
                 decoder.readString().should.equal("\u00A9 all rights reserved");
@@ -166,55 +172,59 @@ describe('IO', function(){
         })
         describe('skipNull()', function(){
             it('should be a no op since nulls are encoded a nothing', function(){
+                reader.write(new Buffer([1]));
                 decoder.skipNull();
-                decoder.idx.should.equal(0);
+                reader.bytesAhead().should.equal(1);
             })
         })
         describe('skipBoolean()', function(){
             it('should skip a reading by 1 byte', function(){
+                reader.write(new Buffer([1]));
                 decoder.skipBoolean();
-                decoder.idx.should.equal(1);
+                reader.bytesAhead().should.equal(0);
             });
         })
         describe('skipLong()', function(){
             it('should skip n bytes of a long encoded with zigzag encoding', function(){
-                decoder.setBuffer(new Buffer([0x94, 0x02]));
+                reader.write(new Buffer([0x94, 0x02]));
                 decoder.skipLong();
-                decoder.idx.should.equal(2);
-                decoder.setBuffer(new Buffer([0x02]));
+                reader.bytesAhead().should.equal(0);
+                reader.write(new Buffer([0x02]));
                 decoder.skipLong();
-                decoder.idx.should.equal(1);
+                reader.bytesAhead().should.equal(0)
             })
         })
         describe('skipFloat()', function(){
             it('should skip 4 bytes of an encoded float', function(){
+                reader.write(new Buffer([0x40, 0x50, 0x60, 0x70]));
                 decoder.skipFloat();
-                decoder.idx.should.equal(4);
+                reader.bytesAhead().should.equal(0);
             })
         })
         describe('skipDouble()', function(){
             it('should skip 8 bytes of an encoded double', function(){
+                reader.write(new Buffer([0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0, 0xB0]));
                 decoder.skipDouble();
-                decoder.idx.should.equal(8);
+                reader.bytesAhead().should.equal(0);
             })
         })
         describe('skipBytes()', function(){
             it('should ', function(){
-                decoder.setBuffer(new Buffer([0x04, 0x64, 0x40]))
+                reader.write(new Buffer([0x04, 0x64, 0x40]))
                 decoder.skipBytes();
-                decoder.idx.should.equal(3);
+                reader.bytesAhead().should.equal(0);
             })
         })
         describe('skipString()', function(){
             it('should skip a long followed by that many bytes', function(){
-                decoder.setBuffer(new Buffer([0x04, 0x4F, 0x4B]));
+                reader.write(new Buffer([0x04, 0x4F, 0x4B]));
                 decoder.skipString();
-                decoder.idx.should.equal(3);
+                reader.bytesAhead().should.equal(0);
             });
             it('should skip a long followed by a UTF-8 encoded string', function(){
-                decoder.setBuffer(new Buffer([0x0a, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c]));
+                reader.write(new Buffer([0x0c, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c]));
                 decoder.skipString();
-                decoder.idx.should.equal(6);
+                reader.bytesAhead().should.equal(0);
             });
         })
     })

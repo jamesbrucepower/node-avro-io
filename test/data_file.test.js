@@ -2,13 +2,14 @@ var assert = require("assert");
 var should = require("should");
 var fs = require("fs");
 
-var DataFile = require(__dirname + "/../lib/datafile");
+var libpath = process.env["MOCHA_COV"] ? __dirname + "/../lib-cov/" : __dirname + "/../lib/";
+var Avro = require(libpath + "/../lib/datafile");
 
 describe('DataFile', function(){
     var testFile = __dirname + "/../test/data/test.avro";
     var dataFile;
     before(function(){
-        dataFile = DataFile();
+        dataFile = Avro.File();
         if (fs.existsSync(testFile))
             fs.unlinkSync(testFile);
     });
@@ -59,7 +60,6 @@ describe('DataFile', function(){
         it('should write a schema and associated data to a file', function(done) {
             var schema = "string";  //{ "type": "string" };
             var data = "The quick brown fox jumped over the lazy dogs";
-            var dataFile = DataFile();
             dataFile.open(testFile, schema, { flags: 'w', codec: "deflate" });
             dataFile.write(data, function(err) {
                 dataFile.write(data, function(err) {
@@ -75,12 +75,15 @@ describe('DataFile', function(){
     describe('read()', function() {
         it('should read an avro data file', function(done){
             var schema = { "type": "string" };
-            var dataFile = DataFile()
             dataFile.open(testFile, schema, { flags: 'r' });
+            var i = 0;
             dataFile.read(function(err, data) {
                 data.should.equal("The quick brown fox jumped over the lazy dogs");
-                dataFile.close();
-                done();
+                i++;
+                if (i == 3) {
+                    dataFile.close();
+                    done();
+                }
             });
         });
     });
