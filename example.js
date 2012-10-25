@@ -1,3 +1,4 @@
+var sprint = require('sprint');
 var DataFile = require(__dirname + "/lib/datafile");
 
 var fileName = process.argv[2];
@@ -8,6 +9,6 @@ dataFile.read(function(err, data) {
         console.error(err);
     else {
         if (data.request.path === "/authZ/authorize" && data.response.status == 200)
-            console.log("%s %s %s %s", data.customer.data.username, data.request.body.productUrl, data.time, data.request.headers.referer);
+            console.log(sprint("%30s: %s", data.customer.data.username, data.request.body.productUrl));
     }
 });
