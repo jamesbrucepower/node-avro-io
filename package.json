@@ -6,13 +6,17 @@
       "name": "James Power", 
       "email": "james.bruce.power@gmail.com"
   },
-  "main": "avro-io",
+  "repository": {
+      "type": "git",
+      "url": "git://github.com/jamesbrucepower/avro-io.git"
+  },
+  "main": "./index",
   "scripts": {
-      "test": "node_modules/.bin/mocha --reporter spec"
+      "test": "make test"
   },
   "dependencies": {
     "underscore": "latest",
-    "snappy": "latest",
+    "snappy": "latest"
   },
   "devDependencies": {
     "mocha": "latest",

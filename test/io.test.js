@@ -7,7 +7,7 @@ require('buffertools');
 var libpath = process.env["MOCHA_COV"] ? __dirname + "/../lib-cov/" : __dirname + "/../lib/";
 
 var IO = require(libpath + "/../lib/io");
-var Avro = require(libpath + "/../lib/datafile");
+var DataFile = require(libpath + "/../lib/datafile");
 
 
 describe('IO', function(){
@@ -93,7 +93,7 @@ describe('IO', function(){
     describe('BinaryDecoder()', function(){
         var decoder = null, reader = null;
         beforeEach(function(){
-            reader = Avro.Reader();
+            reader = DataFile.Reader;
             decoder = IO.BinaryDecoder(reader);
         })
         afterEach(function(){
