@@ -30,10 +30,8 @@ describe('DataFile', function(){
             var schema = "int";
             dataFile.open(testFile, schema, { flags: 'r' });
             dataFile.Reader.read(function(err, data) {
-                if (err) 
-                    done(err);
+                if (err) done(err);
                 else {
-                    dataFile.close();
                     data.should.equal(1);
                     fs.unlinkSync(testFile); 
                     done();               
