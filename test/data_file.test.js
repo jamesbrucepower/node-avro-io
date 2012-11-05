@@ -19,8 +19,8 @@ describe('DataFile', function(){
     describe('open()', function(){
         it('should open a file for writing if passed a w flag and write an avro header', function(done){
             var schema = "int";
-            dataFile.open(testFile, schema, { flags: 'w' });
-            dataFile.Writer.write(1, function(err) {
+            var writer = dataFile.open(testFile, schema, { flags: 'w' });
+            writer.write(1, function(err) {
                 dataFile.close();
                 fs.existsSync(testFile).should.be.true;                
                 done();
@@ -28,8 +28,8 @@ describe('DataFile', function(){
         });
         it('should open a file for reading if passed a r flag', function(done){
             var schema = "int";
-            dataFile.open(testFile, schema, { flags: 'r' });
-            dataFile.Reader.read(function(err, data) {
+            var reader = dataFile.open(testFile, schema, { flags: 'r' });
+            reader.read(function(err, data) {
                 if (err) done(err);
                 else {
                     data.should.equal(1);
