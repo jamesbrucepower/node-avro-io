@@ -4,9 +4,9 @@ var fs = require("fs");
 require('buffertools');
 
 var libpath = process.env["MOCHA_COV"] ? __dirname + "/../lib-cov/" : __dirname + "/../lib/";
-var DataFile = require(libpath + "/../lib/datafile")();
+var DataFile = require(libpath + "/../lib/datafile");
 
-describe('DataFile', function(){
+describe('AvroFile', function(){
     var testFile = __dirname + "/../test/data/test.avro";
     describe('open()', function(){
 	    before(function(){
@@ -14,11 +14,11 @@ describe('DataFile', function(){
 	            fs.unlinkSync(testFile);
 	    });
 	    after(function(){
-	        fs.unlinkSync(testFile);
+	        //fs.unlinkSync(testFile);
 	    })
 	    it('should open a file for writing if passed a w flag and write an avro header', function(done){
             var schema = "int";
-            var writer = DataFile.open(testFile, schema, { flags: 'w' });
+            var writer = DataFile.AvroFile.open(testFile, schema, { flags: 'w' });
             writer.write(1, function(err) {
                 DataFile.close();
                 fs.existsSync(testFile).should.be.true;                
@@ -27,7 +27,7 @@ describe('DataFile', function(){
         });
         it('should open a file for reading if passed a r flag', function(done){
             var schema = "int";
-            var reader = DataFile.open(testFile, schema, { flags: 'r' });
+            var reader = DataFile.AvroFile.open(testFile, schema, { flags: 'r' });
             reader.read(function(err, data) {
                 if (err) done(err);
                 else {
@@ -39,7 +39,7 @@ describe('DataFile', function(){
         });
         it('should throw an error if an unsupported codec is passed as an option', function(){
             (function() {
-                DataFile.open(null, null, { codec: 'non-existant'});
+                DataFile.AvroFile.open(null, null, { codec: 'non-existant'});
             }).should.throwError();
         })
     });
@@ -84,19 +84,21 @@ describe('DataFile', function(){
 	});
 	
     describe('Writer()', function(){
-		var writer;
+        var avroFile;
 		beforeEach(function(){
-			writer = DataFile.Writer();
+            avroFile = DataFile.AvroFile();
 		})
         describe('_generateSyncMarker()', function(){
             it('should generate a 16 byte sequence to be used as a marker', function(){
+                var writer = DataFile.Writer();
                 writer._generateSyncMarker(16).length.should.equal(16);
             });
         });
 		describe('compressData()', function(){
 			it('should compress a given buffer with deflate and return the compressed buffer', function(done){
 				var reader = DataFile.Reader();
-			  	writer.compressData(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65]), "deflate", function(err, data) {
+			  	var writer = DataFile.Writer();
+                writer.compressData(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65]), "deflate", function(err, data) {
 					reader.decompressData(data, "deflate", function(err, data) {
 						data.equals(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65])).should.be.true;
 				  		done();
@@ -108,11 +110,11 @@ describe('DataFile', function(){
             it('should write a schema and associated data to a file', function(done) {
                 var schema = "string";  //{ "type": "string" };
                 var data = "The quick brown fox jumped over the lazy dogs";
-                DataFile.open(testFile, schema, { flags: 'w', codec: "deflate" });
+                var writer = avroFile.open(testFile, schema, { flags: 'w', codec: "deflate" });
                 writer.write(data, function(err) {
                     writer.write(data, function(err) {
                         writer.write(data, function(err) {
-                            DataFile.close();
+                            avroFile.close();
                             fs.existsSync(testFile).should.be.true; 
                             done();                       
                         });                  
