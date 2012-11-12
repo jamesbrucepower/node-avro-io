@@ -8,15 +8,15 @@ var DataFile = require(libpath + "/../lib/datafile");
 describe('AvroFile', function(){
     var testFile = __dirname + "/../test/data/test.avrofile.avro";
 	var avroFile;
+    before(function(){
+		avroFile = DataFile.AvroFile();
+        if (fs.existsSync(testFile))
+            fs.unlinkSync(testFile);
+    });
+    after(function(){
+        fs.unlinkSync(testFile);
+    });
     describe('open()', function(){
-	    before(function(){
-			avroFile = DataFile.AvroFile();
-	        if (fs.existsSync(testFile))
-	            fs.unlinkSync(testFile);
-	    });
-	    after(function(){
-	        fs.unlinkSync(testFile);
-	    })
 	    it('should open a file for writing and return a writer', function(done){
             var schema = "string";
             var writer = avroFile.open(testFile, schema, { flags: 'w' });
@@ -46,8 +46,23 @@ describe('AvroFile', function(){
         })
     });
 	describe('close()', function(){
-	  	it('should close a file for the current operation', function(){
-	  	  	
+	  	it('should close a file for the current operation', function(done){
+            var schema = "string";
+            var writer = avroFile.open(testFile, schema, { flags: 'w' });
+			writer.should.be.an.instanceof(DataFile.Writer);
+            writer.write("testing close", function(err) {
+				should.not.exist(err);
+                (function() {
+                    fs.writeSync(writer.fd, new Buffer([0x50, 0x60]), 0, 2);
+                }).should.not.throwError();
+                avroFile.close(function() {
+	                fs.existsSync(testFile).should.be.true;                
+                    (function() {
+                        fs.writeSync(writer.fd, new Buffer([0x50, 0x60]), 0, 2);
+                    }).should.throwError();
+	                done();                	
+                });
+            });
 	  	})
 	})
 });
@@ -88,7 +103,7 @@ describe('Block()', function(){
 			block.write([0x11, 0x21, 0x31, 0x41, 0x51, 0x61, 0x71]);
 			block.isEqual([0x11, 0x21, 0x31, 0x41, 0x51, 0x61, 0x71]).should.be.true;
 		})
-	})
+	});
 });
 	
 describe('Writer()', function(){
