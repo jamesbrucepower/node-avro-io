@@ -1,12 +1,9 @@
 var _ = require('underscore');
 var should = require('should');
 require('buffertools');
-
 var libpath = process.env["MOCHA_COV"] ? __dirname + "/../lib-cov/" : __dirname + "/../lib/";
-
 var IO = require(libpath + "/../lib/io");
 var DataFile = require(libpath + "/../lib/datafile");
-
 describe('IO', function(){
     describe('BinaryEncoder()', function(){
         var encoder, writer;
@@ -17,17 +14,17 @@ describe('IO', function(){
         afterEach(function(){
             encoder = null;
         })
-		it('should throw an error if it is not passed an object to write to', function(){
-			(function() {
-				var invalidEncoder = IO.BinaryEncoder();
-			}).should.throwError();
-		});
-		it('should throw an error if the object passed in does not implement the writeBytes method', function() {
-			(function() {
-				var dummyBlock = { writeBytes: 0 };
-				var invalidEncoder = IO.BinaryEncoder(dummyBlock);
-			}).should.throwError();
-		});
+        it('should throw an error if it is not passed an object to write to', function(){
+            (function() {
+                var invalidEncoder = IO.BinaryEncoder();
+            }).should.throwError();
+        });
+        it('should throw an error if the object passed in does not implement the writeBytes method', function() {
+            (function() {
+                var dummyBlock = { writeBytes: 0 };
+                var invalidEncoder = IO.BinaryEncoder(dummyBlock);
+            }).should.throwError();
+        });
         describe('writeByte()', function(){
             it('should add a single octet to the buffer', function() {
                 encoder.writeByte(50);
@@ -75,7 +72,7 @@ describe('IO', function(){
         describe('writeFixed()', function(){
             it('should add a series of bytes specified by the schema', function(){
                 var testString = "123456789abcdef";
-                encoder.writeFixed(testString);  
+                encoder.writeFixed(testString);
                 writer.toBuffer().toString().should.equal(testString);
                 writer.toBuffer().length.should.equal(testString.length);
             })
@@ -83,9 +80,9 @@ describe('IO', function(){
         describe('writeBytes()', function(){
             it('should be encoded as a long followed by that many bytes of data', function(){
                 var testBytes = new Buffer([255, 1, 254, 2, 253, 3]);
-                encoder.writeBytes(testBytes);  
+                encoder.writeBytes(testBytes);
                 writer.toBuffer()[0].should.equal(testBytes.length * 2);
-                writer.toBuffer()[5].should.equal(253);              
+                writer.toBuffer()[5].should.equal(253);
             })
         });
         describe('writeString()', function(){
@@ -94,7 +91,7 @@ describe('IO', function(){
                 var testString = "\u00A9 all rights reserved";
                 encoder.writeString(testString);
                 writer.toBuffer().equals(new Buffer([0x2c, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c, 0x20,
-                     0x72, 0x69, 0x67, 0x68, 0x74, 0x73, 0x20, 0x72, 0x65, 0x73, 0x65, 0x72, 0x76, 
+                     0x72, 0x69, 0x67, 0x68, 0x74, 0x73, 0x20, 0x72, 0x65, 0x73, 0x65, 0x72, 0x76,
                      0x65, 0x64])).should.be.true;
             })
         });
@@ -160,7 +157,7 @@ describe('IO', function(){
         describe('readString()', function(){
             it('should decode and return a string', function(){
                 reader.write(new Buffer([0x2c, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c, 0x20,
-                     0x72, 0x69, 0x67, 0x68, 0x74, 0x73, 0x20, 0x72, 0x65, 0x73, 0x65, 0x72, 0x76, 
+                     0x72, 0x69, 0x67, 0x68, 0x74, 0x73, 0x20, 0x72, 0x65, 0x73, 0x65, 0x72, 0x76,
                      0x65, 0x64]));
                 decoder.readString().should.equal("\u00A9 all rights reserved");
             })
@@ -236,7 +233,7 @@ describe('IO', function(){
                     "name": "phonetics",
                     "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
                 };
-				var block = DataFile.Block();
+                var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 writer.writeEnum(schema, "Charlie", encoder);
@@ -251,7 +248,7 @@ describe('IO', function(){
                     "type": "array",
                     "items": "long",
                 };
-				var block = DataFile.Block();
+                var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 var testArray = [10, 20, 30, 40, 50];
@@ -263,7 +260,7 @@ describe('IO', function(){
             it('should write a map encoded as a series of blocks, each block consists of a long count, followed by that many key/value pairs, a block count of 0 indicates the end of the map', function(){
                 var schema = {
                     "name": "headers",
-                    "type": { 
+                    "type": {
                         "type": "map",
                         "values": "string"
                     }
@@ -273,7 +270,7 @@ describe('IO', function(){
                     "remote-ip": "10.0.0.0",
                     "content-type": "applicaiton/json"
                 }
-				var block = DataFile.Block();
+                var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 writer.writeMap(schema.type, data, encoder);
@@ -285,13 +282,13 @@ describe('IO', function(){
                     i += key.length;
                     block.toBuffer()[i++].should.equal(value.length * 2); // zig-zag encoding
                     block.toBuffer().slice(i,i + value.length).toString().should.equal(value);
-                    i += value.length;    
+                    i += value.length;
                 })
             });
         });
         describe('writeUnion()', function(){
             it('should encode a union by first writing a long value indicating the zero-based position within the union of the schema of its value, followed by the encoded value according to that schema', function(){
-                should.exist(null);      
+                should.exist(null);
             });
         });
         describe('writeRecord()', function(){
@@ -310,7 +307,7 @@ describe('IO', function(){
                     "lastName": "the_builder",
                     "age": 40
                 }
-				var block = DataFile.Block();
+                var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 writer.writeRecord(schema, data, encoder);
@@ -326,30 +323,30 @@ describe('IO', function(){
                 var schema = {
                     "type": "int"
                 };
-				var block = DataFile.Block();
+                var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 writer.write(-64, encoder);
-                block.toBuffer()[0].should.equal(127);          
+                block.toBuffer()[0].should.equal(127);
             });
             it('should encode a string as a long of its length, followed by the utf8 encoded string', function(){
                 var schema = {
                     "type": "string"
                 };
-				var block = DataFile.Block();
+                var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 writer.write("testing", encoder);
-                block.toBuffer().toString().should.equal("\u000etesting");          
+                block.toBuffer().toString().should.equal("\u000etesting");
             });
             it('should encode a record as the values of its fields in the order of declaration', function(){
                 var schema = {
-                    "type" : "record", 
-                    "name" : "IntStringRecord", 
-                    "fields" : [ { "name" : "intField", "type" : "int" }, 
+                    "type" : "record",
+                    "name" : "IntStringRecord",
+                    "fields" : [ { "name" : "intField", "type" : "int" },
                                  { "name" : "stringField", "type" : "string" }]
                 };
-				var block = DataFile.Block();
+                var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 var record = {
@@ -361,11 +358,11 @@ describe('IO', function(){
             });
             it('should encode a union as a long of the zero-based schema position, followed by the value according to the schema at that position', function(){
                 var schema = [
-                    "int", 
+                    "int",
                     "string",
-                    "null" 
+                    "null"
                 ];
-				var block = DataFile.Block();
+                var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 var record = {
@@ -390,7 +387,7 @@ describe('IO', function(){
         })
         describe('readData()', function(){
             it('should ', function(){
-                should.exist(null);              
+                should.exist(null);
             })
         })
         describe('readEnum()', function(){
@@ -399,32 +396,48 @@ describe('IO', function(){
                     "type": "enum",
                     "name": "phonetics",
                     "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
-                };                
-				var reader = IO.DatumReader(schema);
+                };
+                var reader = IO.DatumReader(schema);
                 var decoder = IO.BinaryDecoder(reader);
                 decoder.write(new Buffer([0x06]));
-                var reader = IO.DatumReader(schema, schema, decoder);
                 reader.readEnum(schema, schema, decoder).should.equal("Delta");
             })
         })
         describe('readArray()', function(){
-            it('should ', function(){
-                should.exist(null);  
+            it('should decode and return an array', function(){
+                var schema = {
+                    "type": "array",
+                    "items": "string"
+                }
+                var data = ["apples", "banannas", "oranges", "pears", "grapes"];
+/*                var block = DataFile.Block();
+                var encoder = IO.BinaryEncoder(block);
+                var writer = IO.DatumWriter(schema);
+                writer.writeArray(schema, data, encoder);
+                console.log(block.toBuffer());*/
+                var block = new DataFile.Block();
+                var reader = IO.DatumReader(schema);
+                var decoder = IO.BinaryDecoder(block);
+                block.write(new Buffer([0x0a, 0x0c, 0x61, 0x70, 0x70, 0x6c, 0x65, 0x73, 0x10, 0x62, 0x61, 
+                                          0x6e, 0x61, 0x6e, 0x6e, 0x61, 0x73, 0x0e, 0x6f, 0x72, 0x61, 0x6e, 
+                                          0x67, 0x65, 0x73, 0x0a, 0x70, 0x65, 0x61, 0x72, 0x73, 0x0c, 0x67, 
+                                          0x72, 0x61, 0x70, 0x65, 0x73, 0x00]));
+                reader.readArray(schema, schema, decoder).should.equal(data);
             })
         })
         describe('readMap()', function(){
             it('should ', function(){
-                should.exist(null);              
+                should.exist(null);
             })
         })
         describe('readUnion()', function(){
             it('should ', function(){
-                should.exist(null);              
+                should.exist(null);
             })
         })
         describe('readRecord()', function(){
             it('should ', function(){
-                should.exist(null);              
+                should.exist(null);
             })
         });
         describe('skipData()', function(){
@@ -433,7 +446,7 @@ describe('IO', function(){
                     "type": "enum",
                     "name": "phonetics",
                     "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
-                };                
+                };
                 var decoder = IO.BinaryDecoder();
                 decoder.setBuffer(new Buffer([0x06]));
                 var reader = IO.DatumReader(schema, schema, decoder);
