@@ -1,9 +1,11 @@
 var _ = require('underscore');
 var should = require('should');
 require('buffertools');
+
 var libpath = process.env["MOCHA_COV"] ? __dirname + "/../lib-cov/" : __dirname + "/../lib/";
 var IO = require(libpath + "/../lib/io");
 var DataFile = require(libpath + "/../lib/datafile");
+
 describe('IO', function(){
     describe('BinaryEncoder()', function(){
         var encoder, writer;
@@ -288,7 +290,21 @@ describe('IO', function(){
         });
         describe('writeUnion()', function(){
             it('should encode a union by first writing a long value indicating the zero-based position within the union of the schema of its value, followed by the encoded value according to that schema', function(){
-                should.exist(null);
+                var schema = [ "string", "int" ];
+                var data = "testing a union";
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                writer.writeUnion(schema, data, encoder);
+                block.toBuffer().length.should.equal(data.length + 2);
+                block.toBuffer()[0].should.equal(0);
+                block.toBuffer()[1].should.equal(data.length * 2);
+                block.toBuffer().slice(2).toString().should.equal(data);   
+                block.flush();
+                writer.writeUnion(schema, 44, encoder);
+                block.toBuffer().length.should.equal(2);
+                block.toBuffer()[0].should.equal(2);
+                block.toBuffer()[1].should.equal(44 * 2);
             });
         });
         describe('writeRecord()', function(){
@@ -422,9 +438,28 @@ describe('IO', function(){
             })
         })
         describe('readMap()', function(){
-            it('should ', function(){
-                should.exist(null);
-            })
+            it('should decode a map and return a json object containing the data', function(){
+                var schema = {
+                    "name": "headers",
+                    "type": {
+                        "type": "map",
+                        "values": "string"
+                    }
+                };
+                var data = [ 6, 20, 117, 115, 101, 114, 45, 97, 103, 101, 110, 116, 14, 102, 105, 114, 101, 
+                             102, 111, 120, 18, 114, 101, 109, 111, 116, 101, 45, 105, 112, 16, 49, 48, 46, 
+                             48, 46, 48, 46, 48, 24, 99, 111, 110, 116, 101, 110, 116, 45, 116, 121, 112, 
+                             101, 32, 97, 112, 112, 108, 105, 99, 97, 105, 116, 111, 110, 47, 106, 115, 111, 
+                             110, 0];            
+                var block = DataFile.Block();
+                block.write(new Buffer(data));
+                var reader = IO.DatumReader(schema);
+                var decoder = IO.BinaryDecoder(block);
+                var map = reader.readMap(schema.type, schema.type, decoder);
+                map.should.have.property("user-agent", "firefox");
+                map.should.have.property("remote-ip", "10.0.0.0");
+                map.should.have.property("content-type", "applicaiton/json");
+            });
         })
         describe('readUnion()', function(){
             it('should ', function(){
@@ -432,8 +467,24 @@ describe('IO', function(){
             })
         })
         describe('readRecord()', function(){
-            it('should ', function(){
-                should.exist(null);
+            it('should decode a record and return a json object containing the data', function(){
+                var schema = {
+                    "name": "user",
+                    "type": "record",
+                    "fields": [
+                        {"name":"firstName","type": "string"},
+                        {"name":"lastName","type": "string"},
+                        {"name":"age","type": "int"}
+                    ]
+                };
+                var block = DataFile.Block();
+                block.write(new Buffer([0x06, 0x62, 0x6f, 0x62, 0x16, 0x74, 0x68, 0x65, 0x5f, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x65, 0x72, 0x50]));
+                var reader = IO.DatumReader(schema);
+                var decoder = IO.BinaryDecoder(block);
+                var record = reader.readRecord(schema, schema, decoder);
+                record.should.have.property("firstName", "bob");
+                record.should.have.property("lastName", "the_builder");
+                record.should.have.property("age", 40);
             })
         });
         describe('skipData()', function(){
