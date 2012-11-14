@@ -1,9 +1,9 @@
-var fs = require("fs");
-var should = require("should");
+var libpath = process.env['MOCHA_COV'] ? __dirname + '/../lib-cov/' : __dirname + '/../lib/';
+var fs = require('fs');
+var should = require('should');
 require('buffertools');
 
-var libpath = process.env["MOCHA_COV"] ? __dirname + "/../lib-cov/" : __dirname + "/../lib/";
-var DataFile = require(libpath + "/../lib/datafile");
+var DataFile = require(libpath + 'datafile');
 
 describe('AvroFile', function(){
     var testFile = __dirname + "/../test/data/test.avrofile.avro";
@@ -41,9 +41,14 @@ describe('AvroFile', function(){
         });
         it('should throw an error if an unsupported codec is passed as an option', function(){
             (function() {
-                DataFile.AvroFile.open(null, null, { codec: 'non-existant'});
+                avroFile.open(null, null, { codec: 'non-existant'});
             }).should.throwError();
-        })
+        });
+        it('should throw an error if an unsupported operation is passed as an option', function(){
+            (function() {
+                avroFile.open(null, null, { flags: 'x'});
+            }).should.throwError();
+        });
     });
 	describe('close()', function(){
 	  	it('should close a file for the current operation', function(done){
@@ -132,7 +137,15 @@ describe('Writer()', function(){
 			  		done();
 				})
 		  	})
-		})
+		});
+        it('should return an error if an unsupported codec is passed as a parameter', function(done){
+            var writer = DataFile.Writer();
+            writer.compressData(new Buffer([0x13, 0x55, 0x35, 0x75]), "unsupported", function(err, data) {
+                should.exist(err);
+                err.should.be.an.instanceof(Error);
+                done();
+            });
+        });
 	});
     describe('write()', function() {
         it('should write a schema and associated data to a file', function(done) {
@@ -170,7 +183,15 @@ describe('Reader()', function(){
 				data.equals(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65])).should.be.true;
 				done();
 			});
-		})
+		});
+        it('should return an error if an unsupported codec is passed as a parameter', function(done) {
+            var reader = DataFile.Reader();
+            reader.decompressData(new Buffer([0x13, 0x55, 0x35, 0x75]), "unsupported", function(err, data) {
+                should.exist(err);
+                err.should.be.an.instanceof(Error);
+                done();
+            });
+        })
 	})
 	describe('read()', function() {
         it('should read an avro data file', function(done){

@@ -2,16 +2,16 @@ var _ = require('underscore');
 var should = require('should');
 require('buffertools');
 
-var libpath = process.env["MOCHA_COV"] ? __dirname + "/../lib-cov/" : __dirname + "/../lib/";
-var IO = require(libpath + "/../lib/io");
-var DataFile = require(libpath + "/../lib/datafile");
+var libpath = process.env['MOCHA_COV'] ? __dirname + '/../lib-cov/' : __dirname + '/../lib/';
+var IO = require(libpath + 'io');
+var DataFile = require(libpath + 'datafile');
 
 describe('IO', function(){
     describe('BinaryEncoder()', function(){
-        var encoder, writer;
+        var encoder, block;
         beforeEach(function(){
-            writer = DataFile.Block();
-            encoder = IO.BinaryEncoder(writer);
+            block = DataFile.Block();
+            encoder = IO.BinaryEncoder(block);
         })
         afterEach(function(){
             encoder = null;
@@ -23,68 +23,68 @@ describe('IO', function(){
         });
         it('should throw an error if the object passed in does not implement the writeBytes method', function() {
             (function() {
-                var dummyBlock = { writeBytes: 0 };
+                var dummyBlock = { write: 0 };
                 var invalidEncoder = IO.BinaryEncoder(dummyBlock);
             }).should.throwError();
         });
         describe('writeByte()', function(){
             it('should add a single octet to the buffer', function() {
                 encoder.writeByte(50);
-                writer.toBuffer()[0].should.equal(50);
+                block.toBuffer()[0].should.equal(50);
                 // Test high bit
                 encoder.writeByte(250);
-                writer.toBuffer()[1].should.equal(250);
+                block.toBuffer()[1].should.equal(250);
             });
         });
         describe('writeNull()', function(){
             it('should not add anything to the buffer', function(){
                 encoder.writeNull();
-                writer.length.should.equal(0);
+                block.length.should.equal(0);
             });
         });
         describe('writeBoolean()', function(){
             it('should add 1 or 0 to the buffer', function(){
                 encoder.writeBoolean(true);
-                writer.toBuffer()[0].should.equal(1);
+                block.toBuffer()[0].should.equal(1);
                 encoder.writeBoolean(false);
-                writer.toBuffer()[1].should.equal(0);
+                block.toBuffer()[1].should.equal(0);
             });
         });
         describe('writeLong()', function(){
             it('should encode a long using zig-zag encoding', function(){
                 encoder.writeLong(4);
-                writer.toBuffer()[0].should.equal(8);
+                block.toBuffer()[0].should.equal(8);
                 encoder.writeLong(138);
-                writer.toBuffer()[1].should.equal(148);
-                writer.toBuffer()[2].should.equal(2);
+                block.toBuffer()[1].should.equal(148);
+                block.toBuffer()[2].should.equal(2);
             });
         });
         describe('writeFloat()', function(){
             it('should encode a 32bit float in 4 bytes using java floatToIntBits method', function(){
                 encoder.writeFloat(1.3278991);
-                writer.toBuffer().equals(new Buffer([0x99, 0xf8, 0xa9, 0x3f])).should.be.true;
+                block.toBuffer().equals(new Buffer([0x99, 0xf8, 0xa9, 0x3f])).should.be.true;
             });
         });
         describe('writeDouble()', function(){
             it('should encode a 64bit float in 8 bytes using java doubleToLongBits method', function() {
                 encoder.writeDouble(8.98928196620122323);
-                writer.toBuffer().equals(new Buffer([0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40])).should.be.true;
+                block.toBuffer().equals(new Buffer([0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40])).should.be.true;
             });
         });
         describe('writeFixed()', function(){
             it('should add a series of bytes specified by the schema', function(){
                 var testString = "123456789abcdef";
                 encoder.writeFixed(testString);
-                writer.toBuffer().toString().should.equal(testString);
-                writer.toBuffer().length.should.equal(testString.length);
+                block.toBuffer().toString().should.equal(testString);
+                block.toBuffer().length.should.equal(testString.length);
             })
         });
         describe('writeBytes()', function(){
             it('should be encoded as a long followed by that many bytes of data', function(){
                 var testBytes = new Buffer([255, 1, 254, 2, 253, 3]);
                 encoder.writeBytes(testBytes);
-                writer.toBuffer()[0].should.equal(testBytes.length * 2);
-                writer.toBuffer()[5].should.equal(253);
+                block.toBuffer()[0].should.equal(testBytes.length * 2);
+                block.toBuffer()[5].should.equal(253);
             })
         });
         describe('writeString()', function(){
@@ -92,9 +92,14 @@ describe('IO', function(){
                 // Test UTF8 characters as well as normal
                 var testString = "\u00A9 all rights reserved";
                 encoder.writeString(testString);
-                writer.toBuffer().equals(new Buffer([0x2c, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c, 0x20,
+                block.toBuffer().equals(new Buffer([0x2c, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c, 0x20,
                      0x72, 0x69, 0x67, 0x68, 0x74, 0x73, 0x20, 0x72, 0x65, 0x73, 0x65, 0x72, 0x76,
                      0x65, 0x64])).should.be.true;
+            });
+            it('should throw an error if is not passed a string', function(){
+                (function() {
+                    encoder.writeString(21);
+                }).should.throwError();
             })
         });
     });
@@ -108,6 +113,17 @@ describe('IO', function(){
             block = null;
             decoder = null;
         })
+        it('should throw an error if the constructor is not passed an input object', function(){
+            (function() {
+                var invalidDecoder = IO.BinaryDecoder();
+            }).should.throwError();
+        });
+        it('should throw an error if the constructor is not passed an input object that implements the read method', function(){
+            (function() {
+                var dummyBlock = { read: false };
+                var invalidDecoder = IO.BinaryDecoder(dummyBlock);
+            }).should.throwError();
+        });
         describe('readNull()', function(){
             it('should decode and return a null', function(){
                 should.not.exist(decoder.readNull());
@@ -462,8 +478,18 @@ describe('IO', function(){
             });
         })
         describe('readUnion()', function(){
-            it('should ', function(){
-                should.exist(null);
+            it('should decode a union by returning the object specified by the schema of the unions index', function(){
+                var schema = [
+                    "int",
+                    "string",
+                    "null"
+                ];
+                var block = DataFile.Block();
+                var reader = IO.DatumReader(schema);
+                var decoder = IO.BinaryDecoder(block);
+                block.write(new Buffer([0x02, 0x08, 0x74, 0x65, 0x73, 0x74]));
+                var result = reader.readUnion(schema, null, decoder);
+                result.should.have.property("string", "test");
             })
         })
         describe('readRecord()', function(){
