@@ -3,16 +3,16 @@
   "description": "This will allow you to encode / decode avro binary format to / from json format, it supports both deflate and snappy compressions and supports node streams",
   "version": "0.0.1",
   "author": {
-      "name": "James Power", 
-      "email": "james.bruce.power@gmail.com"
+    "name": "James Power",
+    "email": "james.bruce.power@gmail.com"
   },
   "repository": {
-      "type": "git",
-      "url": "git://github.com/jamesbrucepower/avro-io.git"
+    "type": "git",
+    "url": "git://github.com/jamesbrucepower/avro-io.git"
   },
   "main": "./index",
   "scripts": {
-      "test": "make test"
+    "test": "make test"
   },
   "dependencies": {
     "underscore": "latest",
@@ -23,7 +23,8 @@
     "should": "latest",
     "jscoverage": "latest",
     "buffertools": "latest",
-    "sprint": "latest"
+    "sprint": "latest",
+    "dtrace-provider": "latest"
   },
   "engines": {
     "node": "latest",
