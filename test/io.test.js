@@ -6,6 +6,10 @@ var libpath = process.env['MOCHA_COV'] ? __dirname + '/../lib-cov/' : __dirname 
 var IO = require(libpath + 'io');
 var DataFile = require(libpath + 'datafile');
 
+function randomString(length) {
+    return new Buffer(new DataFile.Writer()._generateSyncMarker(32)).toString('base64');
+}
+
 describe('IO', function(){
     describe('BinaryEncoder()', function(){
         var encoder, block;
@@ -442,15 +446,16 @@ describe('IO', function(){
                     {"name":"testBytes","type": "bytes"},
                     {"name":"testFixed","type": "fixed", "size": 5},
                     {"name":"testEnum","type": "enum", "symbols": ["Alpha", "Bravo", "Charlie", "Delta"]},
-                    {"name":"testArray","type": "array", "items": "string"},                    
-                    {"name":"testMap","type": "map"},                    
+                    {"name":"testArray","type": "array", "items": "long"},                    
+                    {"name":"testMap","type": { "type":"map", "values": "int"}},                    
                     {"name":"testUnion","type": ["string", "int", "null"]}
                 ]
             };
             var reader = IO.DatumReader(schema, null);
             var block = DataFile.Block();
             var decoder = IO.BinaryDecoder(block);
-            block.write(new Buffer([0x01, 
+            block.write(new Buffer([/*purposely blank*/
+                                    0x01, 
                                     0x08, 0x74, 0x65, 0x73, 0x74,
                                     0x08, 
                                     0x94, 0x02,
@@ -458,6 +463,9 @@ describe('IO', function(){
                                     0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40,
                                     0x0c, 0xF4, 0x44, 0x45, 0x7f, 0x28, 0x6C,
                                     0x19, 0x69, 0x29, 0x3f, 0xff,
+                                    0x04, 
+                                    0x08, 0x14, 0x69, 0x10, 0xF1, 0x01, 0x00,
+                                    0x06, 0x06, 0x6f, 0x6e, 0x65, 0x20, 0x06, 0x74, 0x77, 0x6f, 0x10, 0x0a, 0x74, 0x68, 0x72, 0x65, 0x65, 0x40, 0x00,
                                     0x04]));
             it('should read and decode a null', function(){
                 var result = reader.readData(schema.fields[0], null, decoder);
@@ -503,16 +511,25 @@ describe('IO', function(){
                 result.should.equal("Charlie");
             });
             it('should read and decode an array', function(){
-              
+                var result = reader.readData(schema.fields[10], null, decoder);
+                result.should.eql([10, -53, 8, -121]);
+                result.length.should.equal(4);
             });
             it('should read and decode a map', function(){
-              
+                var result = reader.readData(schema.fields[11].type, null, decoder);
+                result.should.have.property("one", 0x10);
+                result.should.have.property("two", 8);
+                result.should.have.property("three", 0x20);
+                _.size(result).should.equal(3);
             });
             it('should read and decode a union', function(){
-              
+                var result = reader.readData(schema.fields[12].type, null, decoder);
+                result.should.have.property("null",null);
             });
             it('should read and decode a record', function(){
-              
+                block.offset = 0;
+                var result = reader.readData(schema, null, decoder);
+                result.should.have.property("testMap", {"one":0x10});
             });
             it('should throw an error if an unrecognized schema type is provided', function(){
                 (function() {
