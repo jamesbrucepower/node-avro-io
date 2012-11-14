@@ -412,15 +412,113 @@ describe('IO', function(){
         });
     });
     describe('DatumReader()', function(){
+        var block, decoder;
+        beforeEach(function(){
+            block = DataFile.Block();
+            decoder = IO.BinaryDecoder(block);
+        });
         describe('read()', function(){
-            it('should ', function(){
-                should.exist(null);
-            })
-        })
+            it('should set the readersSchema to the writersSchema if readersSchema is null', function(){
+                var schema = "int";
+                var reader = IO.DatumReader(schema, null);
+                block.write(new Buffer([0x06]));
+                var result = reader.read(decoder);
+                result.should.equal(3);
+                reader.writersSchema.should.equal(reader.readersSchema);
+            });
+        });
         describe('readData()', function(){
-            it('should ', function(){
-                should.exist(null);
-            })
+            var schema = {
+                "name": "testRecord",
+                "type": "record",
+                "fields": [
+                    {"name":"testNull","type": "null"},
+                    {"name":"testBoolean","type": "boolean"},
+                    {"name":"testString","type": "string"},
+                    {"name":"testInt","type": "int"},
+                    {"name":"testLong","type": "long"},
+                    {"name":"testFloat","type": "float"},
+                    {"name":"testDouble","type": "double"},
+                    {"name":"testBytes","type": "bytes"},
+                    {"name":"testFixed","type": "fixed", "size": 5},
+                    {"name":"testEnum","type": "enum", "symbols": ["Alpha", "Bravo", "Charlie", "Delta"]},
+                    {"name":"testArray","type": "array", "items": "string"},                    
+                    {"name":"testMap","type": "map"},                    
+                    {"name":"testUnion","type": ["string", "int", "null"]}
+                ]
+            };
+            var reader = IO.DatumReader(schema, null);
+            var block = DataFile.Block();
+            var decoder = IO.BinaryDecoder(block);
+            block.write(new Buffer([0x01, 
+                                    0x08, 0x74, 0x65, 0x73, 0x74,
+                                    0x08, 
+                                    0x94, 0x02,
+                                    0x99, 0xf8, 0xa9, 0x3f,
+                                    0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40,
+                                    0x0c, 0xF4, 0x44, 0x45, 0x7f, 0x28, 0x6C,
+                                    0x19, 0x69, 0x29, 0x3f, 0xff,
+                                    0x04]));
+            it('should read and decode a null', function(){
+                var result = reader.readData(schema.fields[0], null, decoder);
+                should.not.exist(result);
+                block.offset.should.equal(0);                
+            });
+            it('should read and decode a boolean', function(){
+                var result = reader.readData(schema.fields[1], null, decoder);
+                result.should.equal(true);
+            });
+            it('should read and decode a string', function(){
+                var result = reader.readData(schema.fields[2], null, decoder);
+                result.should.equal("test");
+            });
+            it('should read and decode an int', function(){
+                var result = reader.readData(schema.fields[3], null, decoder);
+                result.should.equal(4);
+            });
+            it('should read and decode a long', function(){
+                var result = reader.readData(schema.fields[4], null, decoder);
+                result.should.equal(138);
+            });
+            it('should read and decode a float', function(){
+                var result = reader.readData(schema.fields[5], null, decoder);
+                result.toFixed(7).should.equal('1.3278991')
+            });
+            it('should read and decode a double', function(){
+                var result = reader.readData(schema.fields[6], null, decoder);
+                result.should.equal(8.98928196620122323);
+            });
+            it('should read and decode bytes', function(){
+                var result = reader.readData(schema.fields[7], null, decoder);
+                result.equals(new Buffer([0xF4, 0x44, 0x45, 0x7f, 0x28, 0x6C])).should.be.true;
+                result.length.should.equal(6);
+            });
+            it('should read and decode a fixed', function(){
+                var result = reader.readData(schema.fields[8], null, decoder);
+                result.equals(new Buffer([0x19, 0x69, 0x29, 0x3f, 0xff])).should.be.true;
+                result.length.should.equal(5);
+            });
+            it('should read and decode an enum', function(){
+                var result = reader.readData(schema.fields[9], null, decoder);
+                result.should.equal("Charlie");
+            });
+            it('should read and decode an array', function(){
+              
+            });
+            it('should read and decode a map', function(){
+              
+            });
+            it('should read and decode a union', function(){
+              
+            });
+            it('should read and decode a record', function(){
+              
+            });
+            it('should throw an error if an unrecognized schema type is provided', function(){
+                (function() {
+                    reader.readData({"type":"invalid"}, null, decoder);
+                }).should.throwError();
+            });
         })
         describe('readEnum()', function(){
             it('should decode and return an enumerated type', function(){
@@ -429,9 +527,7 @@ describe('IO', function(){
                     "name": "phonetics",
                     "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
                 };
-                var block = DataFile.Block();
                 var reader = IO.DatumReader(schema);
-                var decoder = IO.BinaryDecoder(block);
                 block.write(new Buffer([0x06]));
                 reader.readEnum(schema, schema, decoder).should.equal("Delta");
             })
@@ -443,9 +539,7 @@ describe('IO', function(){
                     "items": "string"
                 }
                 var data = ["apples", "banannas", "oranges", "pears", "grapes"];
-                var block = DataFile.Block();
                 var reader = IO.DatumReader(schema);
-                var decoder = IO.BinaryDecoder(block);
                 block.write(new Buffer([0x0a, 0x0c, 0x61, 0x70, 0x70, 0x6c, 0x65, 0x73, 0x10, 0x62, 0x61, 
                                         0x6e, 0x61, 0x6e, 0x6e, 0x61, 0x73, 0x0e, 0x6f, 0x72, 0x61, 0x6e, 
                                         0x67, 0x65, 0x73, 0x0a, 0x70, 0x65, 0x61, 0x72, 0x73, 0x0c, 0x67, 
@@ -467,10 +561,8 @@ describe('IO', function(){
                              48, 46, 48, 46, 48, 24, 99, 111, 110, 116, 101, 110, 116, 45, 116, 121, 112, 
                              101, 32, 97, 112, 112, 108, 105, 99, 97, 105, 116, 111, 110, 47, 106, 115, 111, 
                              110, 0];            
-                var block = DataFile.Block();
                 block.write(new Buffer(data));
                 var reader = IO.DatumReader(schema);
-                var decoder = IO.BinaryDecoder(block);
                 var map = reader.readMap(schema.type, schema.type, decoder);
                 map.should.have.property("user-agent", "firefox");
                 map.should.have.property("remote-ip", "10.0.0.0");
@@ -484,9 +576,7 @@ describe('IO', function(){
                     "string",
                     "null"
                 ];
-                var block = DataFile.Block();
                 var reader = IO.DatumReader(schema);
-                var decoder = IO.BinaryDecoder(block);
                 block.write(new Buffer([0x02, 0x08, 0x74, 0x65, 0x73, 0x74]));
                 var result = reader.readUnion(schema, null, decoder);
                 result.should.have.property("string", "test");
@@ -503,10 +593,8 @@ describe('IO', function(){
                         {"name":"age","type": "int"}
                     ]
                 };
-                var block = DataFile.Block();
                 block.write(new Buffer([0x06, 0x62, 0x6f, 0x62, 0x16, 0x74, 0x68, 0x65, 0x5f, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x65, 0x72, 0x50]));
                 var reader = IO.DatumReader(schema);
-                var decoder = IO.BinaryDecoder(block);
                 var record = reader.readRecord(schema, schema, decoder);
                 record.should.have.property("firstName", "bob");
                 record.should.have.property("lastName", "the_builder");
