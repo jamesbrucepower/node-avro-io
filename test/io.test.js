@@ -708,7 +708,11 @@ describe('IO', function(){
                 reader.skipData(schema.fields[12], decoder);
                 block.offset.should.equal(61);
             });
-
+            it('should skip a record', function(){
+                block.offset = 0;
+                reader.skipData(schema, decoder);
+                block.offset.should.equal(61);
+            });
         })
     })
 })
