@@ -311,17 +311,17 @@ describe('IO', function(){
         describe('writeUnion()', function(){
             it('should encode a union by first writing a long value indicating the zero-based position within the union of the schema of its value, followed by the encoded value according to that schema', function(){
                 var schema = [ "string", "int" ];
-                var data = "testing a union";
+                var data = { "string": "testing a union" };
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 writer.writeUnion(schema, data, encoder);
-                block.toBuffer().length.should.equal(data.length + 2);
+                block.toBuffer().length.should.equal(data.string.length + 2);
                 block.toBuffer()[0].should.equal(0);
-                block.toBuffer()[1].should.equal(data.length * 2);
-                block.toBuffer().slice(2).toString().should.equal(data);   
+                block.toBuffer()[1].should.equal(data.string.length * 2);
+                block.toBuffer().slice(2).toString().should.equal(data.string);   
                 block.flush();
-                writer.writeUnion(schema, 44, encoder);
+                writer.writeUnion(schema, {"int":44}, encoder);
                 block.toBuffer().length.should.equal(2);
                 block.toBuffer()[0].should.equal(2);
                 block.toBuffer()[1].should.equal(44 * 2);
@@ -410,8 +410,8 @@ describe('IO', function(){
                 var record = {
                     "null": null
                 };
-                write.writer(record, encoder);
-                writer.buffer()[0].should.equal(6);
+                writer.write(record, encoder);
+                block.toBuffer()[0].should.equal(4);
             });
         });
     });
@@ -448,7 +448,7 @@ describe('IO', function(){
                     {"name":"testEnum","type": "enum", "symbols": ["Alpha", "Bravo", "Charlie", "Delta"]},
                     {"name":"testArray","type": "array", "items": "long"},                    
                     {"name":"testMap","type": { "type":"map", "values": "int"}},                    
-                    {"name":"testUnion","type": ["string", "int", "null"]}
+                    ["string", "int", "null"]
                 ]
             };
             var reader = IO.DatumReader(schema, null);
@@ -516,20 +516,22 @@ describe('IO', function(){
                 result.length.should.equal(4);
             });
             it('should read and decode a map', function(){
-                var result = reader.readData(schema.fields[11].type, null, decoder);
+                var result = reader.readData(schema.fields[11], null, decoder);
                 result.should.have.property("one", 0x10);
                 result.should.have.property("two", 8);
                 result.should.have.property("three", 0x20);
                 _.size(result).should.equal(3);
             });
             it('should read and decode a union', function(){
-                var result = reader.readData(schema.fields[12].type, null, decoder);
+                var result = reader.readData(schema.fields[12], null, decoder);
                 result.should.have.property("null",null);
             });
             it('should read and decode a record', function(){
                 block.offset = 0;
                 var result = reader.readData(schema, null, decoder);
-                result.should.have.property("testMap", {"one":0x10});
+                result.should.have.property("testMap");
+                var map = result.testMap;
+                map.should.have.property("one", 0x10);
             });
             it('should throw an error if an unrecognized schema type is provided', function(){
                 (function() {
@@ -580,7 +582,7 @@ describe('IO', function(){
                              110, 0];            
                 block.write(new Buffer(data));
                 var reader = IO.DatumReader(schema);
-                var map = reader.readMap(schema.type, schema.type, decoder);
+                var map = reader.readMap(schema, null, decoder);
                 map.should.have.property("user-agent", "firefox");
                 map.should.have.property("remote-ip", "10.0.0.0");
                 map.should.have.property("content-type", "applicaiton/json");
@@ -612,25 +614,101 @@ describe('IO', function(){
                 };
                 block.write(new Buffer([0x06, 0x62, 0x6f, 0x62, 0x16, 0x74, 0x68, 0x65, 0x5f, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x65, 0x72, 0x50]));
                 var reader = IO.DatumReader(schema);
-                var record = reader.readRecord(schema, schema, decoder);
+                var record = reader.readRecord(schema, null, decoder);
                 record.should.have.property("firstName", "bob");
                 record.should.have.property("lastName", "the_builder");
                 record.should.have.property("age", 40);
             })
         });
         describe('skipData()', function(){
-            it('should skip skip a specified field type', function(){
-/*                var schema = {
-                    "type": "enum",
-                    "name": "phonetics",
-                    "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
-                };
-                var decoder = IO.BinaryDecoder();
-                decoder.setBuffer(new Buffer([0x06]));
-                var reader = IO.DatumReader(schema, schema, decoder);
-                reader.skipData(schema, null, decoder).should.equal("Delta");*/
-                should.exist(null);
-            })
+            var schema = {
+                "name": "testRecord",
+                "type": "record",
+                "fields": [
+                    {"name":"testNull","type": "null"},
+                    {"name":"testBoolean","type": "boolean"},
+                    {"name":"testString","type": "string"},
+                    {"name":"testInt","type": "int"},
+                    {"name":"testLong","type": "long"},
+                    {"name":"testFloat","type": "float"},
+                    {"name":"testDouble","type": "double"},
+                    {"name":"testBytes","type": "bytes"},
+                    {"name":"testFixed","type": "fixed", "size": 5},
+                    {"name":"testEnum","type": "enum", "symbols": ["Alpha", "Bravo", "Charlie", "Delta"]},
+                    {"name":"testArray","type": "array", "items": "long"},                    
+                    {"name":"testMap","type": { "type":"map", "values": "int"}},                    
+                    ["string", "int", "null"]
+                ]
+            };
+            var reader = IO.DatumReader(schema, null);
+            var block = DataFile.Block();
+            var decoder = IO.BinaryDecoder(block);
+            block.write(new Buffer([/*purposely blank*/
+                                    0x01, 
+                                    0x08, 0x74, 0x65, 0x73, 0x74,
+                                    0x08, 
+                                    0x94, 0x02,
+                                    0x99, 0xf8, 0xa9, 0x3f,
+                                    0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40,
+                                    0x0c, 0xF4, 0x44, 0x45, 0x7f, 0x28, 0x6C,
+                                    0x19, 0x69, 0x29, 0x3f, 0xff,
+                                    0x04, 
+                                    0x08, 0x14, 0x69, 0x10, 0xF1, 0x01, 0x00,
+                                    0x06, 0x06, 0x6f, 0x6e, 0x65, 0x20, 0x06, 0x74, 0x77, 0x6f, 0x10, 0x0a, 0x74, 0x68, 0x72, 0x65, 0x65, 0x40, 0x00,
+                                    0x04]));
+            it('should skip a null', function(){
+                reader.skipData(schema.fields[0], decoder);
+                block.offset.should.equal(0);
+            });
+            it('should skip a boolean', function(){
+                reader.skipData(schema.fields[1], decoder);
+                block.offset.should.equal(1);
+            });
+            it('should skip a string', function(){
+                reader.skipData(schema.fields[2], decoder);
+                block.offset.should.equal(6);
+            });
+            it('should skip an int', function(){
+                reader.skipData(schema.fields[3], decoder);
+                block.offset.should.equal(7);
+            });
+            it('should skip a long', function(){
+                reader.skipData(schema.fields[4], decoder);
+                block.offset.should.equal(9);
+            });
+            it('should skip a float', function(){
+                reader.skipData(schema.fields[5], decoder);
+                block.offset.should.equal(13);
+            });
+            it('should skip a double', function(){
+                reader.skipData(schema.fields[6], decoder);
+                block.offset.should.equal(21);
+            });
+            it('should skip bytes', function(){
+                reader.skipData(schema.fields[7], decoder);
+                block.offset.should.equal(28);
+            });
+            it('should skip a fixed', function(){
+                reader.skipData(schema.fields[8], decoder);
+                block.offset.should.equal(33);
+            });
+            it('should skip an enum', function(){
+                reader.skipData(schema.fields[9], decoder);
+                block.offset.should.equal(34);
+            });
+            it('should skip an array', function(){
+                reader.skipData(schema.fields[10], decoder);
+                block.offset.should.equal(41);
+            });
+            it('should skip a map', function(){
+                reader.skipData(schema.fields[11], decoder);
+                block.offset.should.equal(60);
+            });
+            it('should skip a union', function(){
+                reader.skipData(schema.fields[12], decoder);
+                block.offset.should.equal(61);
+            });
+
         })
     })
 })
