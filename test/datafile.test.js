@@ -173,7 +173,7 @@ describe('Reader()', function(){
     describe('decompressData()', function(){
         it('should compress a given buffer with deflate and return the compressed buffer', function(done){
             var reader = DataFile.Reader();
-              var writer = DataFile.Writer();
+            var writer = DataFile.Writer();
             reader.decompressData(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00]), "deflate", function(err, data) {
                 data.equals(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65])).should.be.true;
                 done();

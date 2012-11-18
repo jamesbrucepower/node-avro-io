@@ -13,7 +13,6 @@ var InvalidProtocolError = function(msg) { return new Error('InvalidProtocolErro
 var ValidationError = function(msg) { return new Error('ValidationError: ' + msg); };
 var ProtocolValidationError = function(msg) { return new Error('ProtocolValidationError: ' + msg); };
 
-
 function Record(name, namespace, fields) {
   function validateArgs(name, namespace, fields) {
     if (!_.isString(name)) {
