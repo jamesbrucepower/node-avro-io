@@ -6,7 +6,7 @@ AVRO_FILES := $(AVRO_SRCS:.json=.avro)
 
 avro-tools: 
 	-@[ -d "tools" ] || mkdir tools
-	-@[ -e $(AVRO_TOOLS_JAR) ] || (cd tools && curl -sO http://apache.mirror.rbftpnetworks.com/avro/avro-1.7.2/java/avro-tools-1.7.2.jar)
+	-@[ -e $(AVRO_TOOLS_JAR) ] || (cd tools && curl -sO http://mirror.lividpenguin.com/pub/apache/avro/avro-1.7.2/java/avro-tools-1.7.2.jar)
 
 test:
 	@NODE_ENV=test ./node_modules/.bin/mocha -R $(REPORTER)

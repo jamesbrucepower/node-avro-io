@@ -1,0 +1,26 @@
+{
+    "host": "testhostA",
+    "time": "1970-01-01T00:00Z",
+    "elapsedTime": 123456789, 
+    "request": {
+        "headers": {
+            "user-agent": "firefox",
+            "remote-ip": "0.0.0.0"
+        },
+        "method": "GET",
+        "path": "/basepath/object",
+        "queryString": {
+            "string": "param1=test1&param2=test2"
+        },
+        "body": {}
+    },
+    "exception": {
+        "e.d.c.b.a.AppException": {
+            "class": "org.apache.avro",
+            "message": "An error occurred",
+            "stackTrace": {
+                "string": "failed at line 1"
+            }
+        }
+    }
+}
