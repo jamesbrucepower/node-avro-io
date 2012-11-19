@@ -413,6 +413,144 @@ describe('IO', function(){
                 writer.write(record, encoder);
                 block.toBuffer()[0].should.equal(4);
             });
+            it('should encode a nested schema', function() {
+                var schema = {
+                    "fields": [
+                        {
+                            "name": "host", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "time", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "elapsedTime", 
+                            "type": "long"
+                        }, 
+                        {
+                            "name": "request", 
+                            "type": {
+                                "fields": [
+                                    {
+                                        "name": "headers", 
+                                        "type": {
+                                            "type": "map", 
+                                            "values": "string"
+                                        }
+                                    }, 
+                                    {
+                                        "name": "method", 
+                                        "type": "string"
+                                    }, 
+                                    {
+                                        "name": "path", 
+                                        "type": "string"
+                                    }, 
+                                    {
+                                        "name": "queryString", 
+                                        "type": [
+                                            "string", 
+                                            "null"
+                                        ]
+                                    }, 
+                                    {
+                                        "name": "body", 
+                                        "type": {
+                                            "type": "map", 
+                                            "values": "string"
+                                        }
+                                    }
+                                ], 
+                                "name": "Request", 
+                                "type": "record"
+                            }
+                        }, 
+                        {
+                            "name": "exception", 
+                            "type": [
+                                {
+                                    "fields": [
+                                        {
+                                            "name": "class", 
+                                            "type": "string"
+                                        }, 
+                                        {
+                                            "name": "message", 
+                                            "type": "string"
+                                        }, 
+                                        {
+                                            "name": "stackTrace", 
+                                            "type": [
+                                                "null", 
+                                                "string"
+                                            ]
+                                        }
+                                    ], 
+                                    "name": "AppException", 
+                                    "type": "record"
+                                }, 
+                                "null"
+                            ]
+                        }
+                    ], 
+                    "name": "LogEvent", 
+                    "namespace": "e.d.c.b.a", 
+                    "type": "record"
+                }
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var log = {
+                    host: "testhostA",
+                    time: "1970-01-01T00:00Z",
+                    elapsedTime: 123456789, 
+                    request: {
+                        headers: {
+                            "user-agent": "firefox",
+                            "remote-ip": "0.0.0.0"
+                        },
+                        method: "GET",
+                        path: "/basepath/object",
+                        queryString: {
+                            "string": "param1=test1&param2=test2"
+                        },
+                        body: {}
+                    },
+                    exception: {
+                        "AppException": {
+                            "class": "org.apache.avro",
+                            message: "An error occurred",
+                            stackTrace: {
+                                "string": "failed at line 1"
+                            }
+                        }
+                    }
+                }
+                writer.write(log, encoder);
+                block.toBuffer().equals(new Buffer([0x02, 0xda, 0x02, 0x12, 0x74, 0x65, 0x73, 0x74,
+                                                    0x68, 0x6f, 0x73, 0x74, 0x41, 0x22, 0x31, 0x39,
+                                                    0x37, 0x30, 0x2d, 0x30, 0x31, 0x2d, 0x30, 0x31,
+                                                    0x54, 0x30, 0x30, 0x3a, 0x30, 0x30, 0x5a, 0xaa,
+                                                    0xb4, 0xde, 0x75, 0x04, 0x14, 0x75, 0x73, 0x65,
+                                                    0x72, 0x2d, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x0e,
+                                                    0x66, 0x69, 0x72, 0x65, 0x66, 0x6f, 0x78, 0x12,
+                                                    0x72, 0x65, 0x6d, 0x6f, 0x74, 0x65, 0x2d, 0x69,
+                                                    0x70, 0x0e, 0x30, 0x2e, 0x30, 0x2e, 0x30, 0x2e,
+                                                    0x30, 0x00, 0x06, 0x47, 0x45, 0x54, 0x20, 0x2f,
+                                                    0x62, 0x61, 0x73, 0x65, 0x70, 0x61, 0x74, 0x68,
+                                                    0x2f, 0x6f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x00,
+                                                    0x32, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x31, 0x3d,
+                                                    0x74, 0x65, 0x73, 0x74, 0x31, 0x26, 0x70, 0x61,
+                                                    0x72, 0x61, 0x6d, 0x32, 0x3d, 0x74, 0x65, 0x73,
+                                                    0x74, 0x32, 0x00, 0x00, 0x1e, 0x6f, 0x72, 0x67,
+                                                    0x2e, 0x61, 0x70, 0x61, 0x63, 0x68, 0x65, 0x2e,
+                                                    0x61, 0x76, 0x72, 0x6f, 0x22, 0x41, 0x6e, 0x20,
+                                                    0x65, 0x72, 0x72, 0x6f, 0x72, 0x20, 0x6f, 0x63,
+                                                    0x63, 0x75, 0x72, 0x72, 0x65, 0x64, 0x02, 0x20,
+                                                    0x66, 0x61, 0x69, 0x6c, 0x65, 0x64, 0x20, 0x61,
+                                                    0x74, 0x20, 0x6c, 0x69, 0x6e, 0x65, 0x20, 0x31])).should.be.true;
+            })
         });
     });
     describe('DatumReader()', function(){
@@ -528,6 +666,7 @@ describe('IO', function(){
             });
             it('should read and decode a record', function(){
                 block.offset = 0;
+                debugger;
                 var result = reader.readData(schema, null, decoder);
                 result.should.have.property("testMap");
                 var map = result.testMap;
