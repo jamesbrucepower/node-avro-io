@@ -413,6 +413,9 @@ describe('IO', function(){
                 writer.write(record, encoder);
                 block.toBuffer()[0].should.equal(4);
             });
+            it('should encode a nested schema', function() {
+              
+            })
         });
     });
     describe('DatumReader()', function(){
@@ -528,6 +531,7 @@ describe('IO', function(){
             });
             it('should read and decode a record', function(){
                 block.offset = 0;
+                debugger;
                 var result = reader.readData(schema, null, decoder);
                 result.should.have.property("testMap");
                 var map = result.testMap;

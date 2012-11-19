@@ -23,6 +23,9 @@ avro: avro-tools $(AVRO_FILES)
 test/data/%.avro: test/data/%.json test/data/%.schema
 	java -jar $(AVRO_TOOLS_JAR) fromjson --schema-file $(word 2,$^) $< > $@
 	
+debug:
+	@NODE_ENV=test ./node_modules/.bin/mocha debug -R $(REPORTER)
+	
 clean:
 	-@rm coverage.html
 	-@rm -rf lib-cov
