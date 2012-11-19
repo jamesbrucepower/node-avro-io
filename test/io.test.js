@@ -527,7 +527,6 @@ describe('IO', function(){
                         }
                     }
                 }
-                debugger;
                 writer.write(log, encoder);
                 block.toBuffer().equals(new Buffer([0x02, 0xda, 0x02, 0x12, 0x74, 0x65, 0x73, 0x74,
                                                     0x68, 0x6f, 0x73, 0x74, 0x41, 0x22, 0x31, 0x39,
