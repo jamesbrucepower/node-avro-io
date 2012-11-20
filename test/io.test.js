@@ -5,6 +5,7 @@ require('buffertools');
 var libpath = process.env['MOCHA_COV'] ? __dirname + '/../lib-cov/' : __dirname + '/../lib/';
 var IO = require(libpath + 'io');
 var DataFile = require(libpath + 'datafile');
+var Avro = require(libpath + 'schema');
 
 function randomString(length) {
     return new Buffer(new DataFile.Writer()._generateSyncMarker(32)).toString('base64');
@@ -244,17 +245,17 @@ describe('IO', function(){
     })
     describe('DatumWriter()', function() {
         it('should be initiated and store a schema', function(){
-            var schema = "long";
+            var schema = Avro.Schema("long");
             var writer = IO.DatumWriter(schema);
             writer.writersSchema.should.equal(schema);
         })
         describe('writeEnum()', function(){
             it('should write an eneration encoded by its index', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "type": "enum",
                     "name": "phonetics",
                     "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
-                };
+                });
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
@@ -266,10 +267,10 @@ describe('IO', function(){
         });
         describe('writeArray()', function(){
             it('should encode an array as a series of blocks, each block consists of a long count value, followed by that many array items, a block with count zero indicates the end of the array', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "type": "array",
                     "items": "long",
-                };
+                });
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
@@ -280,13 +281,13 @@ describe('IO', function(){
         });
         describe('writeMap()', function(){
             it('should write a map encoded as a series of blocks, each block consists of a long count, followed by that many key/value pairs, a block count of 0 indicates the end of the map', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "name": "headers",
                     "type": {
                         "type": "map",
                         "values": "string"
                     }
-                };
+                });
                 var data = {
                     "user-agent": "firefox",
                     "remote-ip": "10.0.0.0",
@@ -295,7 +296,7 @@ describe('IO', function(){
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
-                writer.writeMap(schema.type, data, encoder);
+                writer.writeMap(schema, data, encoder);
                 var i = 0;
                 block.toBuffer()[i++].should.equal(_.size(data) * 2); // zig-zag encoding
                 _.each(data, function(value, key) {
@@ -310,7 +311,7 @@ describe('IO', function(){
         });
         describe('writeUnion()', function(){
             it('should encode a union by first writing a long value indicating the zero-based position within the union of the schema of its value, followed by the encoded value according to that schema', function(){
-                var schema = [ "string", "int" ];
+                var schema = Avro.Schema([ "string", "int" ]);
                 var data = { "string": "testing a union" };
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
@@ -321,7 +322,7 @@ describe('IO', function(){
                 block.toBuffer()[1].should.equal(data.string.length * 2);
                 block.toBuffer().slice(2).toString().should.equal(data.string);   
                 block.flush();
-                writer.writeUnion(schema, {"int":44}, encoder);
+                writer.writeUnion(schema, { "int": 44 }, encoder);
                 block.toBuffer().length.should.equal(2);
                 block.toBuffer()[0].should.equal(2);
                 block.toBuffer()[1].should.equal(44 * 2);
@@ -329,7 +330,7 @@ describe('IO', function(){
         });
         describe('writeRecord()', function(){
             it('should encode a record by encoding the values of its fields in the order that they are declared', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "name": "user",
                     "type": "record",
                     "fields": [
@@ -337,7 +338,7 @@ describe('IO', function(){
                         {"name":"lastName","type": "string"},
                         {"name":"age","type": "int"}
                     ]
-                };
+                });
                 var data = {
                     "firstName": "bob",
                     "lastName": "the_builder",
@@ -356,9 +357,9 @@ describe('IO', function(){
         });
         describe('write()', function(){
             it('should encode an int/long with zig-zag encoding', function() {
-                var schema = {
+                var schema = Avro.Schema({
                     "type": "int"
-                };
+                });
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
@@ -366,9 +367,9 @@ describe('IO', function(){
                 block.toBuffer()[0].should.equal(127);
             });
             it('should encode a string as a long of its length, followed by the utf8 encoded string', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "type": "string"
-                };
+                });
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
@@ -376,12 +377,12 @@ describe('IO', function(){
                 block.toBuffer().toString().should.equal("\u000etesting");
             });
             it('should encode a record as the values of its fields in the order of declaration', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "type" : "record",
                     "name" : "IntStringRecord",
                     "fields" : [ { "name" : "intField", "type" : "int" },
                                  { "name" : "stringField", "type" : "string" }]
-                };
+                });
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
@@ -393,11 +394,11 @@ describe('IO', function(){
                 block.toBuffer().toString().should.equal("\u0002\u0006abc");
             });
             it('should encode a union as a long of the zero-based schema position, followed by the value according to the schema at that position', function(){
-                var schema = [
+                var schema = Avro.Schema([
                     "int",
                     "string",
                     "null"
-                ];
+                ]);
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
@@ -414,7 +415,7 @@ describe('IO', function(){
                 block.toBuffer()[0].should.equal(4);
             });
             it('should encode a nested schema', function() {
-                var schema = {
+                var schema = Avro.Schema({
                     "fields": [
                         {
                             "name": "host", 
@@ -497,7 +498,7 @@ describe('IO', function(){
                     "name": "LogEvent", 
                     "namespace": "e.d.c.b.a", 
                     "type": "record"
-                }
+                });
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
@@ -528,7 +529,7 @@ describe('IO', function(){
                     }
                 }
                 writer.write(log, encoder);
-                block.toBuffer().equals(new Buffer([0x02, 0xda, 0x02, 0x12, 0x74, 0x65, 0x73, 0x74,
+                block.toBuffer().equals(new Buffer([0x12, 0x74, 0x65, 0x73, 0x74,
                                                     0x68, 0x6f, 0x73, 0x74, 0x41, 0x22, 0x31, 0x39,
                                                     0x37, 0x30, 0x2d, 0x30, 0x31, 0x2d, 0x30, 0x31,
                                                     0x54, 0x30, 0x30, 0x3a, 0x30, 0x30, 0x5a, 0xaa,
@@ -561,7 +562,7 @@ describe('IO', function(){
         });
         describe('read()', function(){
             it('should set the readersSchema to the writersSchema if readersSchema is null', function(){
-                var schema = "int";
+                var schema = Avro.Schema("int");
                 var reader = IO.DatumReader(schema, null);
                 block.write(new Buffer([0x06]));
                 var result = reader.read(decoder);
@@ -570,7 +571,7 @@ describe('IO', function(){
             });
         });
         describe('readData()', function(){
-            var schema = {
+            var schema = Avro.Schema({
                 "name": "testRecord",
                 "type": "record",
                 "fields": [
@@ -586,10 +587,11 @@ describe('IO', function(){
                     {"name":"testEnum","type": "enum", "symbols": ["Alpha", "Bravo", "Charlie", "Delta"]},
                     {"name":"testArray","type": "array", "items": "long"},                    
                     {"name":"testMap","type": { "type":"map", "values": "int"}},                    
-                    ["string", "int", "null"]
+                    {"name":"testUnion","type":["string", "int", "null"]}
                 ]
-            };
-            var reader = IO.DatumReader(schema, null);
+            });
+            schema.should.be.an.instanceof(Avro.RecordSchema);
+            var reader = IO.DatumReader(schema);
             var block = DataFile.Block();
             var decoder = IO.BinaryDecoder(block);
             block.write(new Buffer([/*purposely blank*/
@@ -606,62 +608,62 @@ describe('IO', function(){
                                     0x06, 0x06, 0x6f, 0x6e, 0x65, 0x20, 0x06, 0x74, 0x77, 0x6f, 0x10, 0x0a, 0x74, 0x68, 0x72, 0x65, 0x65, 0x40, 0x00,
                                     0x04]));
             it('should read and decode a null', function(){
-                var result = reader.readData(schema.fields[0], null, decoder);
+                var result = reader.readData(schema.fields["testNull"].type, null, decoder);
                 should.not.exist(result);
                 block.offset.should.equal(0);                
             });
             it('should read and decode a boolean', function(){
-                var result = reader.readData(schema.fields[1], null, decoder);
+                var result = reader.readData(schema.fields["testBoolean"].type, null, decoder);
                 result.should.equal(true);
             });
             it('should read and decode a string', function(){
-                var result = reader.readData(schema.fields[2], null, decoder);
+                var result = reader.readData(schema.fields["testString"].type, null, decoder);
                 result.should.equal("test");
             });
             it('should read and decode an int', function(){
-                var result = reader.readData(schema.fields[3], null, decoder);
+                var result = reader.readData(schema.fields["testInt"].type, null, decoder);
                 result.should.equal(4);
             });
             it('should read and decode a long', function(){
-                var result = reader.readData(schema.fields[4], null, decoder);
+                var result = reader.readData(schema.fields["testLong"].type, null, decoder);
                 result.should.equal(138);
             });
             it('should read and decode a float', function(){
-                var result = reader.readData(schema.fields[5], null, decoder);
+                var result = reader.readData(schema.fields["testFloat"].type, null, decoder);
                 result.toFixed(7).should.equal('1.3278991')
             });
             it('should read and decode a double', function(){
-                var result = reader.readData(schema.fields[6], null, decoder);
+                var result = reader.readData(schema.fields["testDouble"].type, null, decoder);
                 result.should.equal(8.98928196620122323);
             });
             it('should read and decode bytes', function(){
-                var result = reader.readData(schema.fields[7], null, decoder);
+                var result = reader.readData(schema.fields["testBytes"].type, null, decoder);
                 result.equals(new Buffer([0xF4, 0x44, 0x45, 0x7f, 0x28, 0x6C])).should.be.true;
                 result.length.should.equal(6);
             });
             it('should read and decode a fixed', function(){
-                var result = reader.readData(schema.fields[8], null, decoder);
+                var result = reader.readData(schema.fields["testFixed"].type, null, decoder);
                 result.equals(new Buffer([0x19, 0x69, 0x29, 0x3f, 0xff])).should.be.true;
                 result.length.should.equal(5);
             });
             it('should read and decode an enum', function(){
-                var result = reader.readData(schema.fields[9], null, decoder);
+                var result = reader.readData(schema.fields["testEnum"].type, null, decoder);
                 result.should.equal("Charlie");
             });
             it('should read and decode an array', function(){
-                var result = reader.readData(schema.fields[10], null, decoder);
+                var result = reader.readData(schema.fields["testArray"].type, null, decoder);
                 result.should.eql([10, -53, 8, -121]);
                 result.length.should.equal(4);
             });
             it('should read and decode a map', function(){
-                var result = reader.readData(schema.fields[11], null, decoder);
+                var result = reader.readData(schema.fields["testMap"].type, null, decoder);
                 result.should.have.property("one", 0x10);
                 result.should.have.property("two", 8);
                 result.should.have.property("three", 0x20);
                 _.size(result).should.equal(3);
             });
             it('should read and decode a union', function(){
-                var result = reader.readData(schema.fields[12], null, decoder);
+                var result = reader.readData(schema.fields["testUnion"].type, null, decoder);
                 result.should.have.property("null",null);
             });
             it('should read and decode a record', function(){
@@ -680,11 +682,11 @@ describe('IO', function(){
         })
         describe('readEnum()', function(){
             it('should decode and return an enumerated type', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "type": "enum",
                     "name": "phonetics",
                     "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
-                };
+                });
                 var reader = IO.DatumReader(schema);
                 block.write(new Buffer([0x06]));
                 reader.readEnum(schema, schema, decoder).should.equal("Delta");
@@ -692,10 +694,10 @@ describe('IO', function(){
         })
         describe('readArray()', function(){
             it('should decode and return an array', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "type": "array",
                     "items": "string"
-                }
+                });
                 var data = ["apples", "banannas", "oranges", "pears", "grapes"];
                 var reader = IO.DatumReader(schema);
                 block.write(new Buffer([0x0a, 0x0c, 0x61, 0x70, 0x70, 0x6c, 0x65, 0x73, 0x10, 0x62, 0x61, 
@@ -707,13 +709,13 @@ describe('IO', function(){
         })
         describe('readMap()', function(){
             it('should decode a map and return a json object containing the data', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "name": "headers",
                     "type": {
                         "type": "map",
                         "values": "string"
                     }
-                };
+                });
                 var data = [ 6, 20, 117, 115, 101, 114, 45, 97, 103, 101, 110, 116, 14, 102, 105, 114, 101, 
                              102, 111, 120, 18, 114, 101, 109, 111, 116, 101, 45, 105, 112, 16, 49, 48, 46, 
                              48, 46, 48, 46, 48, 24, 99, 111, 110, 116, 101, 110, 116, 45, 116, 121, 112, 
@@ -721,7 +723,7 @@ describe('IO', function(){
                              110, 0];            
                 block.write(new Buffer(data));
                 var reader = IO.DatumReader(schema);
-                var map = reader.readMap(schema, null, decoder);
+                var map = reader.readMap(schema, schema, decoder);
                 map.should.have.property("user-agent", "firefox");
                 map.should.have.property("remote-ip", "10.0.0.0");
                 map.should.have.property("content-type", "applicaiton/json");
@@ -729,20 +731,20 @@ describe('IO', function(){
         })
         describe('readUnion()', function(){
             it('should decode a union by returning the object specified by the schema of the unions index', function(){
-                var schema = [
+                var schema = Avro.Schema([
                     "int",
                     "string",
                     "null"
-                ];
+                ]);
                 var reader = IO.DatumReader(schema);
                 block.write(new Buffer([0x02, 0x08, 0x74, 0x65, 0x73, 0x74]));
-                var result = reader.readUnion(schema, null, decoder);
+                var result = reader.readUnion(schema, schema, decoder);
                 result.should.have.property("string", "test");
             })
         })
         describe('readRecord()', function(){
             it('should decode a record and return a json object containing the data', function(){
-                var schema = {
+                var schema = Avro.Schema({
                     "name": "user",
                     "type": "record",
                     "fields": [
@@ -750,17 +752,17 @@ describe('IO', function(){
                         {"name":"lastName","type": "string"},
                         {"name":"age","type": "int"}
                     ]
-                };
+                });
                 block.write(new Buffer([0x06, 0x62, 0x6f, 0x62, 0x16, 0x74, 0x68, 0x65, 0x5f, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x65, 0x72, 0x50]));
                 var reader = IO.DatumReader(schema);
-                var record = reader.readRecord(schema, null, decoder);
+                var record = reader.readRecord(schema, schema, decoder);
                 record.should.have.property("firstName", "bob");
                 record.should.have.property("lastName", "the_builder");
                 record.should.have.property("age", 40);
             })
         });
         describe('skipData()', function(){
-            var schema = {
+            var schema = Avro.Schema({
                 "name": "testRecord",
                 "type": "record",
                 "fields": [
@@ -776,10 +778,10 @@ describe('IO', function(){
                     {"name":"testEnum","type": "enum", "symbols": ["Alpha", "Bravo", "Charlie", "Delta"]},
                     {"name":"testArray","type": "array", "items": "long"},                    
                     {"name":"testMap","type": { "type":"map", "values": "int"}},                    
-                    ["string", "int", "null"]
+                    {"name":"testUnion","type":["string", "int", "null"]}
                 ]
-            };
-            var reader = IO.DatumReader(schema, null);
+            });
+            var reader = IO.DatumReader(schema);
             var block = DataFile.Block();
             var decoder = IO.BinaryDecoder(block);
             block.write(new Buffer([/*purposely blank*/
@@ -796,55 +798,55 @@ describe('IO', function(){
                                     0x06, 0x06, 0x6f, 0x6e, 0x65, 0x20, 0x06, 0x74, 0x77, 0x6f, 0x10, 0x0a, 0x74, 0x68, 0x72, 0x65, 0x65, 0x40, 0x00,
                                     0x04]));
             it('should skip a null', function(){
-                reader.skipData(schema.fields[0], decoder);
+                reader.skipData(schema.fields["testNull"].type, decoder);
                 block.offset.should.equal(0);
             });
             it('should skip a boolean', function(){
-                reader.skipData(schema.fields[1], decoder);
+                reader.skipData(schema.fields["testBoolean"].type, decoder);
                 block.offset.should.equal(1);
             });
             it('should skip a string', function(){
-                reader.skipData(schema.fields[2], decoder);
+                reader.skipData(schema.fields["testString"].type, decoder);
                 block.offset.should.equal(6);
             });
             it('should skip an int', function(){
-                reader.skipData(schema.fields[3], decoder);
+                reader.skipData(schema.fields["testInt"].type, decoder);
                 block.offset.should.equal(7);
             });
             it('should skip a long', function(){
-                reader.skipData(schema.fields[4], decoder);
+                reader.skipData(schema.fields["testLong"].type, decoder);
                 block.offset.should.equal(9);
             });
             it('should skip a float', function(){
-                reader.skipData(schema.fields[5], decoder);
+                reader.skipData(schema.fields["testFloat"].type, decoder);
                 block.offset.should.equal(13);
             });
             it('should skip a double', function(){
-                reader.skipData(schema.fields[6], decoder);
+                reader.skipData(schema.fields["testDouble"].type, decoder);
                 block.offset.should.equal(21);
             });
             it('should skip bytes', function(){
-                reader.skipData(schema.fields[7], decoder);
+                reader.skipData(schema.fields["testBytes"].type, decoder);
                 block.offset.should.equal(28);
             });
             it('should skip a fixed', function(){
-                reader.skipData(schema.fields[8], decoder);
+                reader.skipData(schema.fields["testFixed"].type, decoder);
                 block.offset.should.equal(33);
             });
             it('should skip an enum', function(){
-                reader.skipData(schema.fields[9], decoder);
+                reader.skipData(schema.fields["testEnum"].type, decoder);
                 block.offset.should.equal(34);
             });
             it('should skip an array', function(){
-                reader.skipData(schema.fields[10], decoder);
+                reader.skipData(schema.fields["testArray"].type, decoder);
                 block.offset.should.equal(41);
             });
             it('should skip a map', function(){
-                reader.skipData(schema.fields[11], decoder);
+                reader.skipData(schema.fields["testMap"].type, decoder);
                 block.offset.should.equal(60);
             });
             it('should skip a union', function(){
-                reader.skipData(schema.fields[12], decoder);
+                reader.skipData(schema.fields["testUnion"].type, decoder);
                 block.offset.should.equal(61);
             });
             it('should skip a record', function(){

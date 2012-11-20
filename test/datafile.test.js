@@ -17,6 +17,7 @@ describe('AvroFile', function(){
     describe('open()', function(){
         it('should open a file for writing and return a writer', function(done){
             var schema = "string";
+            debugger;
             var writer = avroFile.open(testFile, schema, { flags: 'w' });
             writer.should.be.an.instanceof(DataFile.Writer);
             writer.write("testing", function(err) {
