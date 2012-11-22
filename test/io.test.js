@@ -608,62 +608,62 @@ describe('IO', function(){
                                     0x06, 0x06, 0x6f, 0x6e, 0x65, 0x20, 0x06, 0x74, 0x77, 0x6f, 0x10, 0x0a, 0x74, 0x68, 0x72, 0x65, 0x65, 0x40, 0x00,
                                     0x04]));
             it('should read and decode a null', function(){
-                var result = reader.readData(schema.fields["testNull"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testNull"].type, null, decoder);
                 should.not.exist(result);
                 block.offset.should.equal(0);                
             });
             it('should read and decode a boolean', function(){
-                var result = reader.readData(schema.fields["testBoolean"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testBoolean"].type, null, decoder);
                 result.should.equal(true);
             });
             it('should read and decode a string', function(){
-                var result = reader.readData(schema.fields["testString"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testString"].type, null, decoder);
                 result.should.equal("test");
             });
             it('should read and decode an int', function(){
-                var result = reader.readData(schema.fields["testInt"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testInt"].type, null, decoder);
                 result.should.equal(4);
             });
             it('should read and decode a long', function(){
-                var result = reader.readData(schema.fields["testLong"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testLong"].type, null, decoder);
                 result.should.equal(138);
             });
             it('should read and decode a float', function(){
-                var result = reader.readData(schema.fields["testFloat"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testFloat"].type, null, decoder);
                 result.toFixed(7).should.equal('1.3278991')
             });
             it('should read and decode a double', function(){
-                var result = reader.readData(schema.fields["testDouble"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testDouble"].type, null, decoder);
                 result.should.equal(8.98928196620122323);
             });
             it('should read and decode bytes', function(){
-                var result = reader.readData(schema.fields["testBytes"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testBytes"].type, null, decoder);
                 result.equals(new Buffer([0xF4, 0x44, 0x45, 0x7f, 0x28, 0x6C])).should.be.true;
                 result.length.should.equal(6);
             });
             it('should read and decode a fixed', function(){
-                var result = reader.readData(schema.fields["testFixed"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testFixed"].type, null, decoder);
                 result.equals(new Buffer([0x19, 0x69, 0x29, 0x3f, 0xff])).should.be.true;
                 result.length.should.equal(5);
             });
             it('should read and decode an enum', function(){
-                var result = reader.readData(schema.fields["testEnum"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testEnum"].type, null, decoder);
                 result.should.equal("Charlie");
             });
             it('should read and decode an array', function(){
-                var result = reader.readData(schema.fields["testArray"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testArray"].type, null, decoder);
                 result.should.eql([10, -53, 8, -121]);
                 result.length.should.equal(4);
             });
             it('should read and decode a map', function(){
-                var result = reader.readData(schema.fields["testMap"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testMap"].type, null, decoder);
                 result.should.have.property("one", 0x10);
                 result.should.have.property("two", 8);
                 result.should.have.property("three", 0x20);
                 _.size(result).should.equal(3);
             });
             it('should read and decode a union', function(){
-                var result = reader.readData(schema.fields["testUnion"].type, null, decoder);
+                var result = reader.readData(schema.fieldsHash["testUnion"].type, null, decoder);
                 result.should.have.property("null",null);
             });
             it('should read and decode a record', function(){
@@ -798,55 +798,55 @@ describe('IO', function(){
                                     0x06, 0x06, 0x6f, 0x6e, 0x65, 0x20, 0x06, 0x74, 0x77, 0x6f, 0x10, 0x0a, 0x74, 0x68, 0x72, 0x65, 0x65, 0x40, 0x00,
                                     0x04]));
             it('should skip a null', function(){
-                reader.skipData(schema.fields["testNull"].type, decoder);
+                reader.skipData(schema.fieldsHash["testNull"].type, decoder);
                 block.offset.should.equal(0);
             });
             it('should skip a boolean', function(){
-                reader.skipData(schema.fields["testBoolean"].type, decoder);
+                reader.skipData(schema.fieldsHash["testBoolean"].type, decoder);
                 block.offset.should.equal(1);
             });
             it('should skip a string', function(){
-                reader.skipData(schema.fields["testString"].type, decoder);
+                reader.skipData(schema.fieldsHash["testString"].type, decoder);
                 block.offset.should.equal(6);
             });
             it('should skip an int', function(){
-                reader.skipData(schema.fields["testInt"].type, decoder);
+                reader.skipData(schema.fieldsHash["testInt"].type, decoder);
                 block.offset.should.equal(7);
             });
             it('should skip a long', function(){
-                reader.skipData(schema.fields["testLong"].type, decoder);
+                reader.skipData(schema.fieldsHash["testLong"].type, decoder);
                 block.offset.should.equal(9);
             });
             it('should skip a float', function(){
-                reader.skipData(schema.fields["testFloat"].type, decoder);
+                reader.skipData(schema.fieldsHash["testFloat"].type, decoder);
                 block.offset.should.equal(13);
             });
             it('should skip a double', function(){
-                reader.skipData(schema.fields["testDouble"].type, decoder);
+                reader.skipData(schema.fieldsHash["testDouble"].type, decoder);
                 block.offset.should.equal(21);
             });
             it('should skip bytes', function(){
-                reader.skipData(schema.fields["testBytes"].type, decoder);
+                reader.skipData(schema.fieldsHash["testBytes"].type, decoder);
                 block.offset.should.equal(28);
             });
             it('should skip a fixed', function(){
-                reader.skipData(schema.fields["testFixed"].type, decoder);
+                reader.skipData(schema.fieldsHash["testFixed"].type, decoder);
                 block.offset.should.equal(33);
             });
             it('should skip an enum', function(){
-                reader.skipData(schema.fields["testEnum"].type, decoder);
+                reader.skipData(schema.fieldsHash["testEnum"].type, decoder);
                 block.offset.should.equal(34);
             });
             it('should skip an array', function(){
-                reader.skipData(schema.fields["testArray"].type, decoder);
+                reader.skipData(schema.fieldsHash["testArray"].type, decoder);
                 block.offset.should.equal(41);
             });
             it('should skip a map', function(){
-                reader.skipData(schema.fields["testMap"].type, decoder);
+                reader.skipData(schema.fieldsHash["testMap"].type, decoder);
                 block.offset.should.equal(60);
             });
             it('should skip a union', function(){
-                reader.skipData(schema.fields["testUnion"].type, decoder);
+                reader.skipData(schema.fieldsHash["testUnion"].type, decoder);
                 block.offset.should.equal(61);
             });
             it('should skip a record', function(){
