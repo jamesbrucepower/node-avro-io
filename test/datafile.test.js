@@ -112,7 +112,7 @@ describe('Writer()', function(){
     var testFile = __dirname + "/../test/data/test.writer.avro";
     beforeEach(function(){
         avroFile = DataFile.AvroFile();
-    })
+    });
     describe('_generateSyncMarker()', function(){
         it('should generate a 16 byte sequence to be used as a marker', function(){
             var writer = DataFile.Writer();
