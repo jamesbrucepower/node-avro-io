@@ -668,7 +668,6 @@ describe('IO', function(){
             });
             it('should read and decode a record', function(){
                 block.offset = 0;
-                debugger;
                 var result = reader.readData(schema, null, decoder);
                 result.should.have.property("testMap");
                 var map = result.testMap;

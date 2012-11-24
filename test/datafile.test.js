@@ -17,7 +17,6 @@ describe('AvroFile', function(){
     describe('open()', function(){
         it('should open a file for writing and return a writer', function(done){
             var schema = "string";
-            debugger;
             var writer = avroFile.open(testFile, schema, { flags: 'w' });
             writer.should.be.an.instanceof(DataFile.Writer);
             writer.write("testing", function(err) {
@@ -105,7 +104,7 @@ describe('Block()', function(){
             var block = new DataFile.Block();
             block.write([0x11, 0x21, 0x31, 0x41, 0x51, 0x61, 0x71]);
             block.isEqual([0x11, 0x21, 0x31, 0x41, 0x51, 0x61, 0x71]).should.be.true;
-        })
+        });
     });
 });
 describe('Writer()', function(){
