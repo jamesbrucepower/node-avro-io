@@ -76,14 +76,6 @@ describe('IO', function(){
                 block.toBuffer().equals(new Buffer([0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40])).should.be.true;
             });
         });
-        describe('writeFixed()', function(){
-            it('should add a series of bytes specified by the schema', function(){
-                var testString = "123456789abcdef";
-                encoder.writeFixed(testString);
-                block.toBuffer().toString().should.equal(testString);
-                block.toBuffer().length.should.equal(testString.length);
-            })
-        });
         describe('writeBytes()', function(){
             it('should be encoded as a long followed by that many bytes of data', function(){
                 var testBytes = new Buffer([255, 1, 254, 2, 253, 3]);
@@ -249,6 +241,22 @@ describe('IO', function(){
             var writer = IO.DatumWriter(schema);
             writer.writersSchema.should.equal(schema);
         })
+        describe('writeFixed()', function(){
+            it('should add a series of bytes specified by the schema', function(){
+                var schema = Avro.Schema({
+                    "type": "fixed",
+                    "name": "telephone",
+                    "size": 10
+                });
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var testString = "1234567890";
+                writer.writeFixed(schema, testString, encoder);
+                block.toBuffer().toString().should.equal(testString);
+                block.toBuffer().length.should.equal(testString.length);
+            })
+        });
         describe('writeEnum()', function(){
             it('should write an eneration encoded by its index', function(){
                 var schema = Avro.Schema({
