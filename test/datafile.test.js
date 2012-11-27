@@ -99,9 +99,38 @@ describe('Block()', function(){
             block.isEqual(bArray).should.be.true;
         })
     });
+    describe('skip()', function(){
+        it('should skip n bytes of the block', function(){
+            var block = new DataFile.Block(32);
+            block.write([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
+            block.skip(3);
+            block.offset.should.equal(3);
+            block.skip(2);
+            block.offset.should.equal(5);
+        });
+        it('should throw an error if you try to skip past the end of the written amount', function(){
+            (function() {
+                var block = new DataFile.Block(32);
+                block.write([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
+                block.skip(7);                
+            }).should.throwError();
+        });
+    })
+    describe('slice()', function(){
+        it('should return a the written part of the Block', function(){
+            var block = new DataFile.Block(32);
+            block.write([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
+            block.slice().equals(new Buffer([0x01, 0x02, 0x03, 0x04, 0x05, 0x06])).should.be.true;
+        });
+        it('should return the specified sub section of a block', function(){
+            var block = new DataFile.Block(32);
+            block.write([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
+            block.slice(2,5).equals(new Buffer([0x03, 0x04, 0x05])).should.be.true;          
+        })
+    })
     describe('toBuffer()', function(){
         it('should return a buffer with the contents of the block', function(){
-            var block = new DataFile.Block();
+            var block = new DataFile.Block(64);
             block.write([0x11, 0x21, 0x31, 0x41, 0x51, 0x61, 0x71]);
             block.isEqual([0x11, 0x21, 0x31, 0x41, 0x51, 0x61, 0x71]).should.be.true;
         });
@@ -131,6 +160,18 @@ describe('Writer()', function(){
                 reader.decompressData(data, "deflate", function(err, data) {
                     data.equals(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65])).should.be.true;
                       done();
+                })
+              })
+        });
+        it('should compress a given buffer with snappy and return the compressed buffer', function(done){
+            var reader = DataFile.Reader();
+            var writer = DataFile.Writer();
+            writer.compressData(new Buffer("compress this text"), "snappy", function(err, data) {
+                console.log(data);
+                data.equals(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00])).should.be.true;
+                reader.decompressData(data, "snappy", function(err, data) {
+                    data.toString().should.equal("compress this text");
+                    done();
                 })
               })
         });
@@ -173,9 +214,22 @@ describe('Reader()', function(){
     describe('decompressData()', function(){
         it('should compress a given buffer with deflate and return the compressed buffer', function(done){
             var reader = DataFile.Reader();
-            var writer = DataFile.Writer();
             reader.decompressData(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00]), "deflate", function(err, data) {
                 data.equals(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65])).should.be.true;
+                done();
+            });
+        });
+        it('should compress a given buffer with snappy and return the compressed buffer', function(done){
+            var reader = DataFile.Reader();
+            reader.decompressData(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00]), "snappy", function(err, data) {
+                data.equals(new Buffer([0xe4, 0x21, 0xe1, 0x40, 0xc6, 0xd6, 0xf1, 0x11, 0x4c, 0xd5, 0x06, 0x64, 0x0a])).should.be.true;
+                done();
+            });
+        });
+        it('should just return the same data if the codec is null', function(done){
+            var reader = DataFile.Reader();
+            reader.decompressData(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00]), "null", function(err, data) {
+                data.equals(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00])).should.be.true;
                 done();
             });
         });
