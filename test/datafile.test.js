@@ -12,7 +12,7 @@ describe('AvroFile', function(){
             fs.unlinkSync(testFile);
     });
     after(function(){
-        fs.unlinkSync(testFile);
+        //fs.unlinkSync(testFile);
     });
     describe('open()', function(){
         it('should open a file for writing and return a writer', function(done){
@@ -48,7 +48,7 @@ describe('AvroFile', function(){
             }).should.throwError();
         });
     });
-    describe('close()', function(){
+   /* describe('close()', function(){
           it('should close a file for the current operation', function(done){
             var schema = "string";
             var writer = avroFile.open(testFile, schema, { flags: 'w' });
@@ -67,7 +67,7 @@ describe('AvroFile', function(){
                 });
             });
           })
-    })
+    })*/
 });
 describe('Block()', function(){
     describe('length', function() {
