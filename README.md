@@ -4,7 +4,7 @@ Node Avro IO
 This status of this repository is "work in progress"
 
 ```bash
-npm install git://github.com/jamesbrucepower/node-avro-io.git
+npm install https://github.com/jamesbrucepower/node-avro-io.git
 ```
 
 Example usage for writing an avro file
@@ -20,6 +20,7 @@ var writer = avro.open("test.avro", schema, { flags: 'w', codec: 'deflate' });
 writer.write("The quick brown fox jumped over the lazy dogs", function(err) {
     avro.close();
 });
+```
 
 Example usage for reading an avro file
 ```
