@@ -1,0 +1,5 @@
+{
+    "type": "enum",
+    "name": "phonetics",
+    "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
+}

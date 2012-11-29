@@ -1,0 +1,84 @@
+{
+    "fields": [
+        {
+            "name": "host", 
+            "type": "string"
+        }, 
+        {
+            "name": "time", 
+            "type": "string"
+        }, 
+        {
+            "name": "elapsedTime", 
+            "type": "long"
+        }, 
+        {
+            "name": "request", 
+            "type": {
+                "fields": [
+                    {
+                        "name": "headers", 
+                        "type": {
+                            "type": "map", 
+                            "values": "string"
+                        }
+                    }, 
+                    {
+                        "name": "method", 
+                        "type": "string"
+                    }, 
+                    {
+                        "name": "path", 
+                        "type": "string"
+                    }, 
+                    {
+                        "name": "queryString", 
+                        "type": [
+                            "string", 
+                            "null"
+                        ]
+                    }, 
+                    {
+                        "name": "body", 
+                        "type": {
+                            "type": "map", 
+                            "values": "string"
+                        }
+                    }
+                ], 
+                "name": "Request", 
+                "type": "record"
+            }
+        }, 
+        {
+            "name": "exception", 
+            "type": [
+                {
+                    "fields": [
+                        {
+                            "name": "class", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "message", 
+                            "type": "string"
+                        }, 
+                        {
+                            "name": "stackTrace", 
+                            "type": [
+                                "null", 
+                                "string"
+                            ]
+                        }
+                    ], 
+                    "name": "AppException", 
+                    "type": "record"
+                }, 
+                "null"
+            ]
+        }
+    ], 
+    "name": "LogEvent", 
+    "namespace": "e.d.c.b.a", 
+    "type": "record"
+}
