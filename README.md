@@ -7,8 +7,6 @@ This status of this repository is "work in progress"
 npm install https://github.com/jamesbrucepower/node-avro-io.git
 ```
 
-Example usage for writing an avro file
-
 Serializing data to an avro binary file
 ```
 var DataFile = require("node-avro-io").DataFile;
@@ -22,7 +20,7 @@ writer.write("The quick brown fox jumped over the lazy dogs", function(err) {
 });
 ```
 
-Example usage for reading an avro file
+Deserializing data to from avro binary file
 ```
 var DataFile = require("node-avro-io").DataFile;
 
@@ -34,6 +32,9 @@ reader.read(function(err, data) {
     console.log(data);
 });
 ```
+...lots more to follow...
+
+For now see test/*
 
 TODO:
 
