@@ -30,7 +30,7 @@ var avro = DataFile.AvroFile();
 
 var schema = "string";
 var reader = avro.open("test.avro", { flags: 'r' });
-reader.read(function(err, data) {
+reader.read(null, function(err, data) {
     console.log(data);
 });
 ```

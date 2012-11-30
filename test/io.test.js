@@ -26,7 +26,7 @@ describe('IO', function(){
                 var invalidEncoder = IO.BinaryEncoder();
             }).should.throwError();
         });
-        it('should throw an error if the object passed in does not implement the writeBytes method', function() {
+        it('should throw an error if the object passed in does not implement the write() method', function() {
             (function() {
                 var dummyBlock = { write: 0 };
                 var invalidEncoder = IO.BinaryEncoder(dummyBlock);
@@ -82,6 +82,11 @@ describe('IO', function(){
                 encoder.writeBytes(testBytes);
                 block.toBuffer()[0].should.equal(testBytes.length * 2);
                 block.toBuffer()[5].should.equal(253);
+            });
+            it('should throw an error if a buffer or array is not provided', function(){
+                (function() {
+                    encoder.writeBytes(4);
+                }).should.throwError();
             })
         });
         describe('writeString()', function(){
@@ -683,8 +688,18 @@ describe('IO', function(){
             });
             it('should throw an error if an unrecognized schema type is provided', function(){
                 (function() {
-                    reader.readData({"type":"invalid"}, null, decoder);
+                    reader.readData(Avro.schema({"type":"invalid"}), null, decoder);
                 }).should.throwError();
+            });
+            it('should throw an error if the writersSchema provided is not a Schema object', function(){
+                (function() {
+                    reader.readData("invalid", null, decoder);
+                }).should.throwError();              
+            });
+            it('should throw an error if the readersSchema provided is not a Schema object', function(){
+                (function() {
+                    reader.readData(Avro.schema({"type":"string"}), "invalid", decoder);
+                }).should.throwError();              
             });
         })
         describe('readEnum()', function(){
