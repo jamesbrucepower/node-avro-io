@@ -5,10 +5,10 @@ Node Avro IO
 
 Implements the [avro spec](http://avro.apache.org/docs/current/spec.html)
 
-This status of this repository is "work in progress"
+This status of this repository is *work in progress*
 
 ```bash
-npm install https://github.com/jamesbrucepower/node-avro-io.git
+npm install git://github.com/jamesbrucepower/node-avro-io.git
 ```
 
 Serializing data to an avro binary file
@@ -43,5 +43,5 @@ For now see test/*
 TODO:
 
 - Avro RPC
-- Support for Trevni (column major data serialization)
-- Fix snappy compression support
+- Support for Trevni (column major data serialization) serialisation
+- Add more tests for large avro files
