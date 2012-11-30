@@ -1,6 +1,8 @@
 Node Avro IO
 ============
 
+[![Build Status](https://secure.travis-ci.org/jamesbrucepower/node-avro-io.png)](http://travis-ci.org/jamesbrucepower/node-avro-io)
+
 Implements the [avro spec](http://avro.apache.org/docs/current/spec.html)
 
 This status of this repository is "work in progress"
