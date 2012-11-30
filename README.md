@@ -1,6 +1,8 @@
 Node Avro IO
 ============
 
+Implements the [avro spec](http://avro.apache.org/docs/current/spec.html)
+
 This status of this repository is "work in progress"
 
 ```bash

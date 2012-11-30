@@ -1,6 +1,5 @@
 {
   "name": "node-avro-io",
-
   "description": "This will allow you to encode / decode avro binary format to / from json format, it supports both deflate and snappy compressions and supports node streams",
   "version": "0.0.1",
   "author": {
@@ -17,7 +16,8 @@
   },
   "dependencies": {
     "underscore": "latest",
-    "snappy": "latest"
+    "snappy": "latest",
+    "buffer-crc32": "~0.1.1"
   },
   "devDependencies": {
     "mocha": "latest",
