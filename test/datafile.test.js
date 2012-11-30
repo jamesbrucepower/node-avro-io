@@ -163,20 +163,18 @@ describe('Writer()', function(){
                 })
               })
         });
-/*        it('should compress a given buffer with snappy and return the compressed buffer', function(done){
+        it('should compress a given buffer with snappy and return the compressed buffer', function(done){
             var reader = DataFile.Reader();
             var writer = DataFile.Writer();
             writer.compressData(new Buffer("compress this text"), "snappy", function(err, data) {
-                console.log(data);
-                done();
-                //data.equals(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00])).should.be.true;
-                //reader.decompressData(data, "snappy", function(err, data) {
-                //    data.toString().should.equal("compress this text");
-                //    done();
-                //})
-              })
+                reader.decompressData(data, "snappy", function(err, data) {
+                    if (err) done(err);
+                    data.toString().should.equal("compress this text");
+                    done();
+                });
+              });
         });
-  */      it('should return an error if an unsupported codec is passed as a parameter', function(done){
+        it('should return an error if an unsupported codec is passed as a parameter', function(done){
             var writer = DataFile.Writer();
             writer.compressData(new Buffer([0x13, 0x55, 0x35, 0x75]), "unsupported", function(err, data) {
                 should.exist(err);
@@ -220,13 +218,16 @@ describe('Reader()', function(){
                 done();
             });
         });
-        /*it('should compress a given buffer with snappy and return the compressed buffer', function(done){
+        it('should compress a given buffer with snappy and return the compressed buffer', function(done){
             var reader = DataFile.Reader();
-            reader.decompressData(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00]), "snappy", function(err, data) {
-                data.equals(new Buffer([0xe4, 0x21, 0xe1, 0x40, 0xc6, 0xd6, 0xf1, 0x11, 0x4c, 0xd5, 0x06, 0x64, 0x0a])).should.be.true;
+            reader.decompressData(new Buffer([0x12, 0x44, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 
+                                              0x73, 0x20, 0x74, 0x68, 0x69, 0x73, 0x20, 0x74, 0x65, 
+                                              0x78, 0x74, 0x6c, 0x25, 0xd9, 0x04]), "snappy", function(err, data) {
+                if (err) done(err);
+                data.toString().should.equal("compress this text");
                 done();
             });
-        });*/
+        });
         it('should just return the same data if the codec is null', function(done){
             var reader = DataFile.Reader();
             reader.decompressData(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00]), "null", function(err, data) {
