@@ -18,14 +18,18 @@ describe('AvroFile', function(){
         it('should open a file for writing and return a writer', function(done){
             var schema = "string";
             var writer = avroFile.open(testFile, schema, { flags: 'w' });
-            writer.should.be.an.instanceof(DataFile.Writer);
-            writer.write("testing", function(err) {
-                should.not.exist(err);
-                avroFile.close(function() {
+            writer
+                .on('close', function() {
                     fs.existsSync(testFile).should.be.true;
                     done();
+                })
+                .on('data', function(data) {
+                    console.log('got data');
+                    console.log(data);
                 });
-            });
+            writer.should.be.an.instanceof(DataFile.Writer)
+            writer.write('testing');
+            writer.end();
         });
         it('should open a file for reading and return a reader', function(done){
             var schema = "string";
@@ -49,24 +53,24 @@ describe('AvroFile', function(){
         });
     });
     describe('close()', function(){
-          it('should close a file for the current operation', function(done){
+        it('should close a file for the current operation', function(done){
             var schema = "string";
             var writer = avroFile.open(testFile, schema, { flags: 'w' });
             writer.should.be.an.instanceof(DataFile.Writer);
             writer.write("testing close", function(err) {
                 should.not.exist(err);
                 (function() {
-                    fs.writeSync(writer.fd, new Buffer([0x50, 0x60]), 0, 2);
+                    fs.writeSync(writer._fd, new Buffer([0x50, 0x60]), 0, 2);
                 }).should.not.throwError();
                 avroFile.close(function() {
                     fs.existsSync(testFile).should.be.true;
                     (function() {
-                        fs.writeSync(writer.fd, new Buffer([0x50, 0x60]), 0, 2);
+                        fs.writeSync(writer._fd, new Buffer([0x50, 0x60]), 0, 2);
                     }).should.throwError();
                     done();
                 });
             });
-          })
+        });
     })
 });
 describe('Block()', function(){
@@ -142,9 +146,31 @@ describe('Writer()', function(){
     beforeEach(function(){
         avroFile = DataFile.AvroFile();
     });
+    it('should pipe data to a file stream', function(done){
+        var schema = "string";
+        var writer = DataFile.Writer(schema, "deflate");
+        var fileStream = fs.createWriteStream(testFile);
+        writer.pipe(fileStream);
+        fileStream.on('close', function() {
+            fs.existsSync(testFile).should.be.true;
+            done();
+        });
+        writer.write("hello world");
+        writer.end("last line");
+    });
+    it('should pipe data from a read stream', function(done){
+        var reader = DataFile.Reader();
+        var fileStream = fs.createReadStream(testFile);
+        fileStream.pipe(reader);
+        reader.on('data', function(err, data) {
+            data.should.equal("hello world");
+            done();
+        }) 
+    });
     describe('_generateSyncMarker()', function(){
         it('should generate a 16 byte sequence to be used as a marker', function(){
-            var writer = DataFile.Writer();
+            var fd = fs.openSync(testFile, 'w'); 
+            var writer = DataFile.Writer(fd, "string");
             should.not.exist(writer._generateSyncMarker(-5));
             should.not.exist(writer._generateSyncMarker(0));
             writer._generateSyncMarker(16).length.should.equal(16);
@@ -154,7 +180,7 @@ describe('Writer()', function(){
     describe('compressData()', function(){
         it('should compress a given buffer with deflate and return the compressed buffer', function(done){
             var reader = DataFile.Reader();
-              var writer = DataFile.Writer();
+            var writer = DataFile.Writer();
             writer.compressData(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65]), "deflate", function(err, data) {
                 data.equals(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00])).should.be.true;
                 reader.decompressData(data, "deflate", function(err, data) {
@@ -218,7 +244,7 @@ describe('Reader()', function(){
                 done();
             });
         });
-        it('should compress a given buffer with snappy and return the compressed buffer', function(done){
+        /*it('should compress a given buffer with snappy and return the compressed buffer', function(done){
             var reader = DataFile.Reader();
             reader.decompressData(new Buffer([0x12, 0x44, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 
                                               0x73, 0x20, 0x74, 0x68, 0x69, 0x73, 0x20, 0x74, 0x65, 
@@ -227,7 +253,7 @@ describe('Reader()', function(){
                 data.toString().should.equal("compress this text");
                 done();
             });
-        });
+        });*/
         it('should just return the same data if the codec is null', function(done){
             var reader = DataFile.Reader();
             reader.decompressData(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00]), "null", function(err, data) {
