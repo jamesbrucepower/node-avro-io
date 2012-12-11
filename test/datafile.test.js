@@ -16,14 +16,11 @@ describe('AvroFile', function(){
     });
     describe('open()', function(){
         it('should open a file for writing and return a writer', function(done){
-            var schema = "string";
+            var schema = { "type": "string" };
             var writer = avroFile.open(testFile, schema, { flags: 'w' });
             writer
                 .on('error', function(err) {
                     done(err);
-                })
-                .on('data', function(data) {
-                    console.log(data.toString());
                 })
                 .on('close', function() {
                     fs.existsSync(testFile).should.be.true;
@@ -35,16 +32,17 @@ describe('AvroFile', function(){
                 .end();
         });
         it('should open a file for reading and return a reader', function(done){
-            var schema = "string";
-            var reader = avroFile.open(testFile, schema, { flags: 'r' });
+            var reader = avroFile.open(testFile, null, { flags: 'r' });
             reader.should.be.an.instanceof(DataFile.Reader);
             reader
                 .on('data', function(data) {
                     data.should.equal("testing");
-                    done();
                 })
                 .on('error', function(err) {
                     done(err);
+                })
+                .on('close', function() {
+                    done();
                 });
         });
         it('should throw an error if an unsupported codec is passed as an option', function(){
