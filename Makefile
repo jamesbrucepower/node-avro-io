@@ -29,8 +29,8 @@ debug:
 clean:
 	-@[ -f coverage.html ] && rm coverage.html || exit 0
 	-@[ -d lib-cov ] && rm -rf lib-cov || exit 0
-	-@[ -f test/data/test* ] && rm test/data/test* || exit 0
-	-@[ -d tools ] && rm -rf tools || exit 0
+	-@rm test/data/test* || exit 0
+	-@rm -rf tools || exit 0
 	
 all: avro coverage
 	

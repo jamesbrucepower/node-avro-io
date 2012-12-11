@@ -12,7 +12,7 @@ describe('AvroFile', function(){
             fs.unlinkSync(testFile);
     });
     after(function(){
-        //fs.unlinkSync(testFile);
+        fs.unlinkSync(testFile);
     });
     describe('open()', function(){
         it('should open a file for writing and return a writer', function(done){
@@ -131,7 +131,7 @@ describe('Writer()', function(){
         avroFile = DataFile.AvroFile();
     });
     describe('append()', function(){
-        it('should pipe data to a file stream', function(done){
+        it('should write data to a file stream using a pipe', function(done){
             var schema = "string";
             var fileStream = fs.createWriteStream(testFile);
             var writer = DataFile.Writer(schema, "null");
@@ -148,14 +148,20 @@ describe('Writer()', function(){
             writer.end();
         });      
     })
-    it('should pipe data from a read stream', function(done){
+    it('should read data from a file stream pipe', function(done){
         var reader = DataFile.Reader();
         var fileStream = fs.createReadStream(testFile);
         fileStream.pipe(reader);
-        reader.on('data', function(err, data) {
-            data.should.equal("hello world");
-            done(err);
-        }) 
+        reader
+            .on('data', function(data) {
+                data.should.equal("hello world");
+            })
+            .on('error', function(err) {
+                done(err);
+            })
+            .on('close', function() {
+                done();
+            });
     });
     function randomString() {
         var i;
@@ -202,11 +208,6 @@ describe('Writer()', function(){
             })
             .on('data', function(data) {
                 console.log("got data() %d", data.length); 
-            });
-        writer
-            .on('error', function(err) {
-                console.log("got error() %j", err); 
-                done(err);
             });
         var i = 0;
         while(i++ < 1000) writer.append(schemaGenerator());
