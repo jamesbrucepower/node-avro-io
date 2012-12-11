@@ -8,6 +8,12 @@ var schema = 'string';
 var writer = avro.open("test.avro", schema, { flags: 'w', codec: 'deflate' });
 writer.pipe(fileStream);
 writer
+    .on('data', function(data) {
+        console.log(data);
+    })
+    .on('close', function() {
+        console.log('close()');
+    })
     .append("The quick brown fox jumped over the lazy dogs")
     .append("Another entry")
     .end();
