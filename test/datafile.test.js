@@ -130,24 +130,22 @@ describe('Writer()', function(){
     beforeEach(function(){
         avroFile = DataFile.AvroFile();
     });
-    describe('append()', function(){
-        it('should write data to a file stream using a pipe', function(done){
-            var schema = "string";
-            var fileStream = fs.createWriteStream(testFile);
-            var writer = DataFile.Writer(schema, "null");
-            writer.pipe(fileStream);
-            writer
-                .on('error', function(err) {
-                    done(err);
-                })
-                .on('close', function() {
-                    fs.existsSync(testFile).should.be.true;
-                    done();
-                });
-            writer.append("hello world");
-            writer.end();
-        });      
-    })
+    it('should write data to a file stream using a pipe', function(done){
+        var schema = "string";
+        var fileStream = fs.createWriteStream(testFile);
+        var writer = DataFile.Writer(schema, "null");
+        writer.pipe(fileStream);
+        writer
+            .on('error', function(err) {
+                done(err);
+            })
+            .on('close', function() {
+                fs.existsSync(testFile).should.be.true;
+                done();
+            });
+        writer.append("hello world");
+        writer.end();
+    });      
     it('should read data from a file stream pipe', function(done){
         var reader = DataFile.Reader();
         var fileStream = fs.createReadStream(testFile);
@@ -164,12 +162,13 @@ describe('Writer()', function(){
             });
     });
     function randomString() {
-        var i;
+        /*var i;
         var result = "";
         var stringSize = Math.floor(Math.random() * 512);
         for (i = 0; i < stringSize; i++) 
             result += String.fromCharCode(Math.floor(Math.random() * 0xFF));
-        return result;
+        return result;*/
+        return "0123456789abcdefghijklmnopqrstuvwxyz";
     }
     function schemaGenerator() {
         return { 
@@ -177,7 +176,7 @@ describe('Writer()', function(){
             "testString": randomString(), 
             "testLong": Math.floor(Math.random() * 1E10),
             "testDouble": Math.random(),
-            "testBytes": new Buffer(randomString())
+            "testBytes": new Buffer([50, 51, 52,, 53, 54, 55])  //randomString())
         };  
     }
     it('should write a sequence marker after 16k of data to a file stream', function(done) {
@@ -192,22 +191,22 @@ describe('Writer()', function(){
                 {"name":"testBytes","type": "bytes"}
             ]
         };
-        var writer = DataFile.Writer(schema, "deflate");
+        var writer = DataFile.Writer(schema, "null");
         var fileStream = fs.createWriteStream(testFile + ".random");
         writer.pipe(fileStream);
-        fileStream
+        writer
             .on('end', function(data) {
-                console.log("got end()");
+              //  console.log("got end()");
             })
             .on('close', function() {
                 fs.existsSync(testFile).should.be.true;
                 done();
             })
+            .on('data', function(data) {
+                //console.log(data);
+            })
             .on('error', function(err) {
                 done(err);
-            })
-            .on('data', function(data) {
-                console.log("got data() %d", data.length); 
             });
         var i = 0;
         while(i++ < 1000) writer.append(schemaGenerator());
@@ -255,26 +254,25 @@ describe('Writer()', function(){
             });
         });
     });
-    /*describe('write()', function() {
+    describe('write()', function() {
         it('should write a schema and associated data to a file', function(done) {
             var schema = "string";  //{ "type": "string" };
             var data = "The quick brown fox jumped over the lazy dogs";
             var writer = avroFile.open(testFile, schema, { flags: 'w', codec: "deflate" });
-            writer.write(data, function(err) {
-                should.not.exist(err);
-                writer.write(data, function(err) {
-                    should.not.exist(err);
-                    writer.write(data, function(err) {
-                        should.not.exist(err);
-                        avroFile.close(function() {
-                            fs.existsSync(testFile).should.be.true;
-                            done();
-                        });
-                    });
-                });
-            });
+            writer
+                .on('error', function(err) {
+                    done(err);
+                })
+                .on('close', function() {
+                    fs.existsSync(testFile).should.be.true;
+                    done();
+                })
+                .append(data)
+                .append(data)
+                .append(data)
+                .end();
         });
-    });*/
+    });
 });
 describe('Reader()', function(){
     var avroFile;
