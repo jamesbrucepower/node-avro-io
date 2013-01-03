@@ -196,9 +196,10 @@ describe('Writer()', function(){
         writer.pipe(fileStream);
         writer
             .on('end', function(data) {
-              //  console.log("got end()");
+                console.log("got end()");
             })
             .on('close', function() {
+				console.log("got close()");
                 fs.existsSync(testFile).should.be.true;
                 done();
             })
@@ -209,13 +210,21 @@ describe('Writer()', function(){
                 done(err);
             });
         var i = 0;
-        while(i++ < 1000) writer.append(schemaGenerator());
+		var delay = 0;
+        while(i++ < 1000) {
+			setTimeout((function() {
+				if (!writer.append(schemaGenerator())) {
+					delay = 1000;
+					console.log('delaying');
+				} else 
+					delay = 0;
+			}), delay);
+		}
         writer.end();
     });
     describe('_generateSyncMarker()', function(){
         it('should generate a 16 byte sequence to be used as a marker', function(){
-            var fd = fs.openSync(testFile, 'w'); 
-            var writer = DataFile.Writer(fd, "string");
+            var writer = DataFile.Writer();
             should.not.exist(writer._generateSyncMarker(-5));
             should.not.exist(writer._generateSyncMarker(0));
             writer._generateSyncMarker(16).length.should.equal(16);
@@ -314,22 +323,16 @@ describe('Reader()', function(){
             });
         })
     })
-    describe('read()', function() {
+    describe('on()', function() {
         it('should read an avro data file', function(done){
-            var schema = { "type": "string" };
+            var schema = Avro.Schema({ "type": "string" });
             var reader = avroFile.open(testFile, schema, { flags: 'r' });
             reader.should.be.an.instanceof(DataFile.Reader);
-            var i = 0;
-            reader.read(schema, function(err, data) {
-                should.not.exist(err);
-                data.should.equal("The quick brown fox jumped over the lazy dogs");
-                i++;
-                if (i == 3) {
-                    avroFile.close(function() {
-                        fs.unlinkSync(testFile);
-                        done();
-                    });
-                }
+			var i = 0;
+            reader.on('data', function(data) {
+            	data.should.equal("The quick brown fox jumped over the lazy dogs");
+				if (i++ == 2)
+					done();
             });
         });
     });
