@@ -211,14 +211,15 @@ describe('Writer()', function(){
             });
         var i = 0;
 		var delay = 0;
-        while(i++ < 1000) {
-			setTimeout((function() {
+        while(i++ < 200) {
+            writer.append(schemaGenerator());
+/*			setTimeout((function() {
 				if (!writer.append(schemaGenerator())) {
 					delay = 1000;
 					console.log('delaying');
 				} else 
 					delay = 0;
-			}), delay);
+			}), delay);*/
 		}
         writer.end();
     });
