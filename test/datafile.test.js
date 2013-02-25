@@ -3,6 +3,7 @@ var fs = require('fs');
 var should = require('should');
 require('buffertools');
 var DataFile = require(libpath + 'datafile');
+var Avro = require(libpath + 'schema');
 describe('AvroFile', function(){
     var testFile = __dirname + "/../test/data/test.avrofile.avro";
     var avroFile;
@@ -195,16 +196,9 @@ describe('Writer()', function(){
         var fileStream = fs.createWriteStream(testFile + ".random");
         writer.pipe(fileStream);
         writer
-            .on('end', function(data) {
-                console.log("got end()");
-            })
             .on('close', function() {
-				console.log("got close()");
                 fs.existsSync(testFile).should.be.true;
                 done();
-            })
-            .on('data', function(data) {
-                //console.log(data);
             })
             .on('error', function(err) {
                 done(err);
@@ -213,13 +207,6 @@ describe('Writer()', function(){
 		var delay = 0;
         while(i++ < 200) {
             writer.append(schemaGenerator());
-/*			setTimeout((function() {
-				if (!writer.append(schemaGenerator())) {
-					delay = 1000;
-					console.log('delaying');
-				} else 
-					delay = 0;
-			}), delay);*/
 		}
         writer.end();
     });
