@@ -17,7 +17,7 @@ describe('AvroFile', function(){
     });
     describe('open()', function(){
         it('should open a file for writing and return a writer', function(done){
-            var schema = { "type": "string" };
+            var schema = Avro.Schema({ "type": "string" });
             var writer = avroFile.open(testFile, schema, { flags: 'w' });
             writer
                 .on('error', function(err) {
