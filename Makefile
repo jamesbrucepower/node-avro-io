@@ -27,10 +27,10 @@ debug:
 	@NODE_ENV=test ./node_modules/.bin/mocha debug -R $(REPORTER)
 	
 clean:
-	-@rm coverage.html
-	-@rm -rf lib-cov
-	-@rm test/data/*.avro
-	-@rm -rf tools
+	-@[ -f coverage.html ] && rm coverage.html || exit 0
+	-@[ -d lib-cov ] && rm -rf lib-cov || exit 0
+	-@rm test/data/test* || exit 0
+	-@rm -rf tools || exit 0
 	
 all: avro coverage
 	

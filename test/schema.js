@@ -1,8 +1,7 @@
-var libpath = process.env['MOCHA_COV'] ? __dirname + '/../lib-cov/' : __dirname + '/';
-
 var _ = require('underscore');
 var util = require('util');
-var AvroErrors = require(libpath + 'errors.js');
+
+var AvroInvalidSchemaError = function(msg) { return new Error('AvroInvalidSchemaError: ' + util.format.apply(null, arguments)); }
 
 var PRIMITIVE_TYPES = ['null', 'boolean', 'int', 'long', 'float', 'double', 'bytes', 'string'];
 var COMPLEX_TYPES = ['record', 'enum', 'array', 'map', 'union', 'fixed'];
@@ -11,7 +10,7 @@ var _parseNamedType = function(schema, namespace) {
     if (_.contains(PRIMITIVE_TYPES, schema)) {
         return schema;
     } else {
-        throw new AvroErrors.InvalidSchemaError('unknown type name: %s; known type names are ',
+        throw new AvroInvalidSchemaError('unknown type name: %s; known type names are ',
                                          JSON.stringify(schema),
                                          JSON.stringify(_.keys(_namedTypes)));
     }
@@ -31,12 +30,12 @@ function makeFullyQualifiedTypeName(schema, namespace) {
             typeName = schema.type;
         }
     } else {
-        throw new AvroErrors.InvalidSchemaError('unable to determine fully qualified type name from schema %s in namespace %s',
+        throw new AvroInvalidSchemaError('unable to determine fully qualified type name from schema %s in namespace %s',
                                          JSON.stringify(schema), namespace);
     }
 
     if (!_.isString(typeName)) {
-        throw new AvroErrors.InvalidSchemaError('unable to determine type name from schema %s in namespace %s',
+        throw new AvroInvalidSchemaError('unable to determine type name from schema %s in namespace %s',
                                          JSON.stringify(schema), namespace);
     }
 
@@ -65,17 +64,17 @@ _.extend(Schema.prototype, {
     parse: function(schema, namespace) {
         var self = this;
         if (_.isNull(schema) || _.isUndefined(schema)) {
-            throw new AvroErrors.InvalidSchemaError('schema is null, in parentSchema: %s',
+            throw new AvroInvalidSchemaError('schema is null, in parentSchema: %s',
                                              JSON.stringify(parentSchema));
         } else if (_.isString(schema)) {
             return new PrimitiveSchema(schema);
         } else if (_.isObject(schema) && !_.isArray(schema)) {
             if (schema.type === 'record') {
                 if (!_.has(schema, 'fields')) {
-                    throw new AvroErrors.InvalidSchemaError('record must specify "fields", got %s',
+                    throw new AvroInvalidSchemaError('record must specify "fields", got %s',
                                                      JSON.stringify(schema));
                 } else if (!_.has(schema, 'name')) {
-                    throw new AvroErrors.InvalidSchemaError('record must specify "name", got %s',
+                    throw new AvroInvalidSchemaError('record must specify "name", got %s',
                                                      JSON.stringify(schema));
                 } else {
                     return new RecordSchema(schema.name, schema.namespace, 
@@ -87,45 +86,45 @@ _.extend(Schema.prototype, {
                 if (_.has(schema, 'symbols')) {
                     return new EnumSchema(schema.symbols);
                 } else {
-                    throw new AvroErrors.InvalidSchemaError('enum must specify "symbols", got %s',
+                    throw new AvroInvalidSchemaError('enum must specify "symbols", got %s',
                                                      JSON.stringify(schema));
                 }
             } else if (schema.type === 'array') {
                 if (_.has(schema, 'items')) {
                     return new ArraySchema(this.parse(schema.items, namespace), namespace);
                 } else {
-                    throw new AvroErrors.InvalidSchemaError('array must specify "items", got %s',
+                    throw new AvroInvalidSchemaError('array must specify "items", got %s',
                                                      JSON.stringify(schema));
                 }
             } else if (schema.type === 'map') {
                 if (_.has(schema, 'values')) {
                     return new MapSchema(this.parse(schema.values, namespace));
                 } else {
-                    throw new AvroErrors.InvalidSchemaError('map must specify "values" schema, got %s',
+                    throw new AvroInvalidSchemaError('map must specify "values" schema, got %s',
                                                      JSON.stringify(schema));
                 }
             } else if (schema.type === 'fixed') {
                 if (_.has(schema, 'size')) {
                    return new FixedSchema(schema.name, schema.size);
                 } else {
-                    throw new AvroErrors.InvalidSchemaError('fixed must specify "size", got %s',
+                    throw new AvroInvalidSchemaError('fixed must specify "size", got %s',
                                                          JSON.stringify(schema));
                 }
             } else if (_.has(schema, 'type')) {   
                 return this.parse(schema.type, namespace);
             } else {
-                throw new AvroErrors.InvalidSchemaError('not yet implemented: %j', schema);
+                throw new AvroInvalidSchemaError('not yet implemented: %j', schema);
             }
         } else if (_.isArray(schema)) {
             if (_.isEmpty(schema)) {
-                throw new AvroErrors.InvalidSchemaError('unions must have at least 1 branch');
+                throw new AvroInvalidSchemaError('unions must have at least 1 branch');
             }
             var branchTypes = _.map(schema, function(type) { 
                 return self.parse(type, schema, namespace); 
             });
             return new UnionSchema(branchTypes, namespace);
         } else {
-            throw new AvroErrors.InvalidSchemaError('unexpected Javascript type for schema: ' + (typeof schema));
+            throw new AvroInvalidSchemaError('unexpected Javascript type for schema: ' + (typeof schema));
         }
     }, 
     
@@ -141,10 +140,10 @@ _.extend(Schema.prototype, {
 function PrimitiveSchema(type) {
 
     if (!_.isString(type)) {
-        throw new AvroErrors.InvalidSchemaError('Primitive type name must be a string');
+        throw new AvroInvalidSchemaError('Primitive type name must be a string');
     }
     if (!_.contains(PRIMITIVE_TYPES, type)) {
-        throw new AvroErrors.InvalidSchemaError('Primitive type must be one of: %s; got %s',
+        throw new AvroInvalidSchemaError('Primitive type must be one of: %s; got %s',
                                          JSON.stringify(PRIMITIVE_TYPES), type);
     }
 
@@ -155,11 +154,11 @@ util.inherits(PrimitiveSchema, Schema);
 
 function FieldSchema(name, type) {
     if (!_.isString(name)) {
-        throw new AvroErrors.InvalidSchemaError('Field name must be string');
+        throw new AvroInvalidSchemaError('Field name must be string');
     }
     
     if (!(type instanceof Schema)) {
-        throw new AvroErrors.InvalidSchemaError('Field type must be a Schema object');
+        throw new AvroInvalidSchemaError('Field type must be a Schema object');
     }
     
     this.name = name;
@@ -174,15 +173,15 @@ function NamedSchema(name, namespace) {
 
 function RecordSchema(name, namespace, fields) {
     if (!_.isString(name)) {
-        throw new AvroErrors.InvalidSchemaError('Record name must be string');
+        throw new AvroInvalidSchemaError('Record name must be string');
     }
 
     if (!_.isNull(namespace) && !_.isUndefined(namespace) && !_.isString(namespace)) {
-        throw new AvroErrors.InvalidSchemaError('Record namespace must be string or null');
+        throw new AvroInvalidSchemaError('Record namespace must be string or null');
     }
 
     if (!_.isArray(fields)) {
-        throw new AvroErrors.InvalidSchemaError('Fields must be an array');
+        throw new AvroInvalidSchemaError('Fields must be an array');
     }
 
     this.type = 'record';
@@ -207,7 +206,7 @@ util.inherits(MapSchema, Schema);
 
 function ArraySchema(items) {
     if (_.isNull(items) || _.isUndefined(items)) {
-        throw new AvroErrors.InvalidSchemaError('Array "items" schema should not be null or undefined');
+        throw new AvroInvalidSchemaError('Array "items" schema should not be null or undefined');
     }
 
     this.type = 'array';
@@ -230,11 +229,11 @@ util.inherits(UnionSchema, Schema);
 
 function EnumSchema(symbols) {
     if (!_.isArray(symbols)) {
-        throw new AvroErrors.InvalidSchemaError('Enum must have array of symbols, got %s', 
+        throw new AvroInvalidSchemaError('Enum must have array of symbols, got %s', 
                                          JSON.stringify(symbols));
     }
     if (!_.all(symbols, function(symbol) { return _.isString(symbol); })) {
-        throw new AvroErrors.InvalidSchemaError('Enum symbols must be strings, got %s',
+        throw new AvroInvalidSchemaError('Enum symbols must be strings, got %s',
                                          JSON.stringify(symbols));
     }
 

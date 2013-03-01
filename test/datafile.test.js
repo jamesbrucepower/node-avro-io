@@ -3,39 +3,51 @@ var fs = require('fs');
 var should = require('should');
 require('buffertools');
 var DataFile = require(libpath + 'datafile');
+var Avro = require(libpath + 'schema');
+var dataFile;
 describe('AvroFile', function(){
-    var testFile = __dirname + "/../test/data/test.avrofile.avro";
+    dataFile = __dirname + "/../test/data/test.avrofile.avro";
     var avroFile;
     before(function(){
         avroFile = DataFile.AvroFile();
-        if (fs.existsSync(testFile))
-            fs.unlinkSync(testFile);
+        if (fs.existsSync(dataFile))
+            fs.unlinkSync(dataFile);
     });
     after(function(){
-        fs.unlinkSync(testFile);
+        if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
     });
     describe('open()', function(){
         it('should open a file for writing and return a writer', function(done){
-            var schema = "string";
-            var writer = avroFile.open(testFile, schema, { flags: 'w' });
-            writer.should.be.an.instanceof(DataFile.Writer);
-            writer.write("testing", function(err) {
-                should.not.exist(err);
-                avroFile.close(function() {
-                    fs.existsSync(testFile).should.be.true;
+            var schema = Avro.Schema({ "type": "string" });
+            var writer = avroFile.open(dataFile, schema, { flags: 'w' });
+            writer
+                .on('error', function(err) {
+                    done(err);
+                })
+                .on('close', function() {
+                    fs.existsSync(dataFile).should.be.true;
                     done();
                 });
-            });
+            writer.should.be.an.instanceof(DataFile.Writer)
+            writer
+                .append('testing')
+                .end();
         });
         it('should open a file for reading and return a reader', function(done){
-            var schema = "string";
-            var reader = avroFile.open(testFile, schema, { flags: 'r' });
+            var reader = avroFile.open(dataFile, null, { flags: 'r' });
             reader.should.be.an.instanceof(DataFile.Reader);
-            reader.read(schema, function(err, data) {
-                should.not.exist(err);
-                data.should.equal("testing");
-                done();
-            });
+            reader
+                .on('data', function(data) {
+                    data.should.equal("testing");
+                })
+                .on('error', function(err) {
+                    if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
+                    done(err);
+                })
+                .on('close', function() {
+                    fs.unlinkSync(dataFile);
+                    done();
+                });
         });
         it('should throw an error if an unsupported codec is passed as an option', function(){
             (function() {
@@ -48,26 +60,6 @@ describe('AvroFile', function(){
             }).should.throwError();
         });
     });
-    describe('close()', function(){
-          it('should close a file for the current operation', function(done){
-            var schema = "string";
-            var writer = avroFile.open(testFile, schema, { flags: 'w' });
-            writer.should.be.an.instanceof(DataFile.Writer);
-            writer.write("testing close", function(err) {
-                should.not.exist(err);
-                (function() {
-                    fs.writeSync(writer.fd, new Buffer([0x50, 0x60]), 0, 2);
-                }).should.not.throwError();
-                avroFile.close(function() {
-                    fs.existsSync(testFile).should.be.true;
-                    (function() {
-                        fs.writeSync(writer.fd, new Buffer([0x50, 0x60]), 0, 2);
-                    }).should.throwError();
-                    done();
-                });
-            });
-          })
-    })
 });
 describe('Block()', function(){
     describe('length', function() {
@@ -138,9 +130,92 @@ describe('Block()', function(){
 });
 describe('Writer()', function(){
     var avroFile;
-    var testFile = __dirname + "/../test/data/test.writer.avro";
+    dataFile = __dirname + "/../test/data/test.writer.avro";
     beforeEach(function(){
         avroFile = DataFile.AvroFile();
+    });
+    after(function(){
+        if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
+    });
+    it('should write data to a file stream using a pipe', function(done){
+        var schema = "string";
+        var fileStream = fs.createWriteStream(dataFile);
+        var writer = DataFile.Writer(schema, "null");
+        writer.pipe(fileStream);
+        writer
+            .on('error', function(err) {
+                done(err);
+            })
+            .on('close', function() {
+                fs.existsSync(dataFile).should.be.true;
+                done();
+            });
+        writer.append("hello world");
+        writer.end();
+    });      
+    it('should read data from a file stream pipe', function(done){
+        var reader = DataFile.Reader();
+        var fileStream = fs.createReadStream(dataFile);
+        fileStream.pipe(reader);
+        reader
+            .on('data', function(data) {
+                data.should.equal("hello world");
+            })
+            .on('error', function(err) {
+                done(err);
+            })
+            .on('close', function() {
+                done();
+            });
+    });
+    function randomString() {
+        var i;
+        var result = "";
+        var stringSize = Math.floor(Math.random() * 512);
+        for (i = 0; i < stringSize; i++) 
+            result += String.fromCharCode(Math.floor(Math.random() * 0xFF));
+        return result;
+    }
+    function schemaGenerator() {
+        return { 
+            "testBoolean": Math.floor(Math.random() * 2),
+            "testString": randomString(), 
+            "testLong": Math.floor(Math.random() * 1E10),
+            "testDouble": Math.random(),
+            "testBytes": new Buffer(randomString())
+        };  
+    }
+    it('should write a sequence marker after 16k of data to a file stream', function(done) {
+        var schema = {
+            "name": "testLargeDataSet",
+            "type": "record",
+            "fields": [
+                {"name":"testBoolean","type": "boolean"},
+                {"name":"testString","type": "string"},
+                {"name":"testLong","type": "long"},
+                {"name":"testDouble","type": "double"},
+                {"name":"testBytes","type": "bytes"}
+            ]
+        };
+        var writer = DataFile.Writer(schema, "null");
+        var fileStream = fs.createWriteStream(dataFile + ".random");
+        writer.pipe(fileStream);
+        writer
+            .on('close', function() {
+                fs.existsSync(dataFile).should.be.true;
+                fs.unlinkSync(dataFile + ".random");
+                done();
+            })
+            .on('error', function(err) {
+                if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile + ".random");
+                done(err);
+            });
+        var i = 0;
+        var delay = 0;
+        while(i++ < 20) {
+            writer.append(schemaGenerator());
+        }
+        writer.end();
     });
     describe('_generateSyncMarker()', function(){
         it('should generate a 16 byte sequence to be used as a marker', function(){
@@ -154,7 +229,7 @@ describe('Writer()', function(){
     describe('compressData()', function(){
         it('should compress a given buffer with deflate and return the compressed buffer', function(done){
             var reader = DataFile.Reader();
-              var writer = DataFile.Writer();
+            var writer = DataFile.Writer();
             writer.compressData(new Buffer([0x15, 0x25, 0x35, 0x45, 0x55, 0x65]), "deflate", function(err, data) {
                 data.equals(new Buffer([0x13, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x05, 0x00])).should.be.true;
                 reader.decompressData(data, "deflate", function(err, data) {
@@ -187,28 +262,30 @@ describe('Writer()', function(){
         it('should write a schema and associated data to a file', function(done) {
             var schema = "string";  //{ "type": "string" };
             var data = "The quick brown fox jumped over the lazy dogs";
-            var writer = avroFile.open(testFile, schema, { flags: 'w', codec: "deflate" });
-            writer.write(data, function(err) {
-                should.not.exist(err);
-                writer.write(data, function(err) {
-                    should.not.exist(err);
-                    writer.write(data, function(err) {
-                        should.not.exist(err);
-                        avroFile.close(function() {
-                            fs.existsSync(testFile).should.be.true;
-                            done();
-                        });
-                    });
-                });
-            });
+            var writer = avroFile.open(dataFile, schema, { flags: 'w', codec: "deflate" });
+            writer
+                .on('error', function(err) {
+                    done(err);
+                })
+                .on('close', function() {
+                    fs.existsSync(dataFile).should.be.true;
+                    done();
+                })
+                .append(data)
+                .append(data)
+                .append(data)
+                .end();
         });
     });
 });
 describe('Reader()', function(){
     var avroFile;
-    var testFile = __dirname + "/../test/data/test.writer.avro";
+    dataFile = __dirname + "/../test/data/test.writer.avro";
     beforeEach(function(){
         avroFile = DataFile.AvroFile();
+    });
+    after(function(){
+        if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
     });
     describe('decompressData()', function(){
         it('should compress a given buffer with deflate and return the compressed buffer', function(done){
@@ -244,22 +321,34 @@ describe('Reader()', function(){
             });
         })
     })
-    describe('read()', function() {
+    describe('on()', function() {
         it('should read an avro data file', function(done){
-            var schema = { "type": "string" };
-            var reader = avroFile.open(testFile, schema, { flags: 'r' });
+            
+            var schema = "string";
+            var fileStream = fs.createWriteStream(dataFile);
+            var writer = DataFile.Writer(schema, "null");
+            writer.pipe(fileStream);
+            writer
+                .on('error', function(err) {
+                    done(err);
+                })
+                .on('close', function() {
+                    done();
+                });
+            writer
+                .append("The quick brown fox jumped over the lazy dogs")
+                .append("The quick brown fox jumped over the lazy dogs")
+                .append("The quick brown fox jumped over the lazy dogs")         
+                .end();
+                
+            schema = Avro.Schema({ "type": "string" });
+            var reader = avroFile.open(dataFile, schema, { flags: 'r' });
             reader.should.be.an.instanceof(DataFile.Reader);
             var i = 0;
-            reader.read(schema, function(err, data) {
-                should.not.exist(err);
+            reader.on('data', function(data) {
                 data.should.equal("The quick brown fox jumped over the lazy dogs");
-                i++;
-                if (i == 3) {
-                    avroFile.close(function() {
-                        fs.unlinkSync(testFile);
-                        done();
-                    });
-                }
+                if (i++ == 2)
+                    done();
             });
         });
     });

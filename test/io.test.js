@@ -186,57 +186,57 @@ describe('IO', function(){
             it('should be a no op since nulls are encoded a nothing', function(){
                 block.write(new Buffer([1]));
                 decoder.skipNull();
-                block.remainingBytes().should.equal(1);
+                block.remainingBytes.should.equal(1);
             })
         })
         describe('skipBoolean()', function(){
             it('should skip a reading by 1 byte', function(){
                 block.write(new Buffer([1]));
                 decoder.skipBoolean();
-                block.remainingBytes().should.equal(0);
+                block.remainingBytes.should.equal(0);
             });
         })
         describe('skipLong()', function(){
             it('should skip n bytes of a long encoded with zigzag encoding', function(){
                 block.write(new Buffer([0x94, 0x02]));
                 decoder.skipLong();
-                block.remainingBytes().should.equal(0);
+                block.remainingBytes.should.equal(0);
                 block.write(new Buffer([0x02]));
                 decoder.skipLong();
-                block.remainingBytes().should.equal(0)
+                block.remainingBytes.should.equal(0)
             })
         })
         describe('skipFloat()', function(){
             it('should skip 4 bytes of an encoded float', function(){
                 block.write(new Buffer([0x40, 0x50, 0x60, 0x70]));
                 decoder.skipFloat();
-                block.remainingBytes().should.equal(0);
+                block.remainingBytes.should.equal(0);
             })
         })
         describe('skipDouble()', function(){
             it('should skip 8 bytes of an encoded double', function(){
                 block.write(new Buffer([0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0, 0xB0]));
                 decoder.skipDouble();
-                block.remainingBytes().should.equal(0);
+                block.remainingBytes.should.equal(0);
             })
         })
         describe('skipBytes()', function(){
             it('should ', function(){
                 block.write(new Buffer([0x04, 0x64, 0x40]))
                 decoder.skipBytes();
-                block.remainingBytes().should.equal(0);
+                block.remainingBytes.should.equal(0);
             })
         })
         describe('skipString()', function(){
             it('should skip a long followed by that many bytes', function(){
                 block.write(new Buffer([0x04, 0x4F, 0x4B]));
                 decoder.skipString();
-                block.remainingBytes().should.equal(0);
+                block.remainingBytes.should.equal(0);
             });
             it('should skip a long followed by a UTF-8 encoded string', function(){
                 block.write(new Buffer([0x0c, 0xc2, 0xa9, 0x20, 0x61, 0x6c, 0x6c]));
                 decoder.skipString();
-                block.remainingBytes().should.equal(0);
+                block.remainingBytes.should.equal(0);
             });
         })
     })
@@ -680,7 +680,7 @@ describe('IO', function(){
                 result.should.have.property("null",null);
             });
             it('should read and decode a record', function(){
-                block.offset = 0;
+                block.rewind();
                 var result = reader.readData(schema, null, decoder);
                 result.should.have.property("testMap");
                 var map = result.testMap;
@@ -872,7 +872,7 @@ describe('IO', function(){
                 block.offset.should.equal(61);
             });
             it('should skip a record', function(){
-                block.offset = 0;
+                block.rewind();
                 reader.skipData(schema, decoder);
                 block.offset.should.equal(61);
             });
