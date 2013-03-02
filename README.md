@@ -5,7 +5,13 @@ Node Avro IO
 
 Implements the [avro spec](http://avro.apache.org/docs/current/spec.html)
 
-This status of this repository is *work in progress*
+This status of this repository is *initial release*
+
+```bash
+npm install node-avro-io
+```
+
+or
 
 ```bash
 npm install git://github.com/jamesbrucepower/node-avro-io.git
@@ -46,4 +52,4 @@ For now see test/*
 TODO:
 
 - Avro RPC
-- Support for Trevni (column major data serialization) serialisation
+- Support for Trevni (column major data serialization)
