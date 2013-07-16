@@ -325,17 +325,17 @@ describe('IO', function(){
         describe('writeUnion()', function(){
             it('should encode a union by first writing a long value indicating the zero-based position within the union of the schema of its value, followed by the encoded value according to that schema', function(){
                 var schema = Avro.Schema([ "string", "int" ]);
-                var data = { "string": "testing a union" };
+                var data = "testing a union";
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
                 writer.writeUnion(schema, data, encoder);
-                block.toBuffer().length.should.equal(data.string.length + 2);
+                block.toBuffer().length.should.equal(data.length + 2);
                 block.toBuffer()[0].should.equal(0);
-                block.toBuffer()[1].should.equal(data.string.length * 2);
-                block.toBuffer().slice(2).toString().should.equal(data.string);   
+                block.toBuffer()[1].should.equal(data.length * 2);
+                block.toBuffer().slice(2).toString().should.equal(data);   
                 block.flush();
-                writer.writeUnion(schema, { "int": 44 }, encoder);
+                writer.writeUnion(schema, 44, encoder);
                 block.toBuffer().length.should.equal(2);
                 block.toBuffer()[0].should.equal(2);
                 block.toBuffer()[1].should.equal(44 * 2);
@@ -415,15 +415,11 @@ describe('IO', function(){
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
-                var record = {
-                    "string": "test"
-                }
+                var record = "test";
                 writer.write(record, encoder);
                 block.toBuffer().toString().should.equal("\u0002\u0008test");
                 block.flush();
-                var record = {
-                    "null": null
-                };
+                var record = null;
                 writer.write(record, encoder);
                 block.toBuffer()[0].should.equal(4);
             });
@@ -445,6 +441,8 @@ describe('IO', function(){
                         {
                             "name": "request", 
                             "type": {
+                                "name": "Request", 
+                                "type": "record",
                                 "fields": [
                                     {
                                         "name": "headers", 
@@ -475,9 +473,7 @@ describe('IO', function(){
                                             "values": "string"
                                         }
                                     }
-                                ], 
-                                "name": "Request", 
-                                "type": "record"
+                                ]
                             }
                         }, 
                         {
@@ -526,18 +522,14 @@ describe('IO', function(){
                         },
                         method: "GET",
                         path: "/basepath/object",
-                        queryString: {
-                            "string": "param1=test1&param2=test2"
-                        },
+                        queryString: "param1=test1&param2=test2",
                         body: {}
                     },
                     exception: {
                         "AppException": {
                             "class": "org.apache.avro",
                             message: "An error occurred",
-                            stackTrace: {
-                                "string": "failed at line 1"
-                            }
+                            stackTrace: "failed at line 1"
                         }
                     }
                 }
@@ -677,7 +669,7 @@ describe('IO', function(){
             });
             it('should read and decode a union', function(){
                 var result = reader.readData(schema.fieldsHash["testUnion"].type, null, decoder);
-                result.should.have.property("null",null);
+                should.not.exist(result);
             });
             it('should read and decode a record', function(){
                 block.rewind();
@@ -761,7 +753,7 @@ describe('IO', function(){
                 var reader = IO.DatumReader(schema);
                 block.write(new Buffer([0x02, 0x08, 0x74, 0x65, 0x73, 0x74]));
                 var result = reader.readUnion(schema, schema, decoder);
-                result.should.have.property("string", "test");
+                (result === "test").should.be.true;
             })
         })
         describe('readRecord()', function(){
