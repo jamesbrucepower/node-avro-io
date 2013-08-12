@@ -38,13 +38,19 @@ describe('AvroFile', function(){
             reader.should.be.an.instanceof(DataFile.Reader);
             reader
                 .on('data', function(data) {
+					//console.error('data()');
                     data.should.equal("testing");
                 })
                 .on('error', function(err) {
+					console.error('error()');
                     if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
                     done(err);
                 })
+				.on('end', function() {
+					//console.error('end()');
+				})
                 .on('close', function() {
+					//console.error('close()');
                     fs.unlinkSync(dataFile);
                     done();
                 });
