@@ -47,4 +47,3 @@ TODO:
 
 - Avro RPC
 - Support for Trevni (column major data serialization) serialisation
-- Add more tests for large avro files

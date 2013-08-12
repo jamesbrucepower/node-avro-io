@@ -178,7 +178,7 @@ describe('Writer()', function(){
     }
     function schemaGenerator() {
         return { 
-            "testBoolean": Math.floor(Math.random() * 2),
+            "testBoolean": Math.floor(Math.random() * 2) == 0 ? false : true,
             "testString": randomString(), 
             "testLong": Math.floor(Math.random() * 1E10),
             "testDouble": Math.random(),
