@@ -38,13 +38,19 @@ describe('AvroFile', function(){
             reader.should.be.an.instanceof(DataFile.Reader);
             reader
                 .on('data', function(data) {
+					//console.error('data()');
                     data.should.equal("testing");
                 })
                 .on('error', function(err) {
+					//console.error('error()');
                     if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
                     done(err);
                 })
+				.on('end', function() {
+					//console.error('end()');
+				})
                 .on('close', function() {
+					//console.error('close()');
                     fs.unlinkSync(dataFile);
                     done();
                 });
@@ -178,7 +184,7 @@ describe('Writer()', function(){
     }
     function schemaGenerator() {
         return { 
-            "testBoolean": Math.floor(Math.random() * 2),
+            "testBoolean": Math.floor(Math.random() * 2) == 0 ? false : true,
             "testString": randomString(), 
             "testLong": Math.floor(Math.random() * 1E10),
             "testDouble": Math.random(),
@@ -326,14 +332,30 @@ describe('Reader()', function(){
             
             var schema = "string";
             var fileStream = fs.createWriteStream(dataFile);
-            var writer = DataFile.Writer(schema, "null");
+            var writer = DataFile.Writer(schema);
             writer.pipe(fileStream);
             writer
                 .on('error', function(err) {
                     done(err);
                 })
                 .on('close', function() {
-                    done();
+		            schema = Avro.Schema({ "type": "string" });
+		            var reader = avroFile.open(dataFile, schema, { flags: 'r' });
+		            reader.should.be.an.instanceof(DataFile.Reader);
+		            var i = 0;
+		            reader
+						.on('data', function(data) {
+		                	data.should.equal("The quick brown fox jumped over the lazy dogs");
+		                	i++;
+		            	})
+						.on('error', function(err) {
+							console.error(err);
+							done(err);
+						})
+						.on('close', function() {
+							if (i == 3)
+								done();
+						});
                 });
             writer
                 .append("The quick brown fox jumped over the lazy dogs")
@@ -341,15 +363,6 @@ describe('Reader()', function(){
                 .append("The quick brown fox jumped over the lazy dogs")         
                 .end();
                 
-            schema = Avro.Schema({ "type": "string" });
-            var reader = avroFile.open(dataFile, schema, { flags: 'r' });
-            reader.should.be.an.instanceof(DataFile.Reader);
-            var i = 0;
-            reader.on('data', function(data) {
-                data.should.equal("The quick brown fox jumped over the lazy dogs");
-                if (i++ == 2)
-                    done();
-            });
         });
     });
 });
