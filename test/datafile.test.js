@@ -12,11 +12,11 @@ describe('AvroFile', function(){
     var avroFile;
     before(function(){
         avroFile = DataFile.AvroFile();
-        //if (fs.existsSync(dataFile))
-        //    fs.unlinkSync(dataFile);
+        if (fs.existsSync(dataFile))
+            fs.unlinkSync(dataFile);
     });
     after(function(){
-       // if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
+       if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
     });
     describe('open()', function(){
         it('should open a file for writing and return a writer', function(done){
@@ -45,7 +45,7 @@ describe('AvroFile', function(){
                 })
                 .on('error', function(err) {
 					//console.error('error()');
-                    //if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
+                    if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
                     done(err);
                 })
 				.on('end', function() {
@@ -140,7 +140,7 @@ describe('Writer()', function(){
         avroFile = DataFile.AvroFile();
     });
     after(function(){
-        //if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
+        if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
     });
     it('should write data to a file stream using a pipe', function(done){
         var schema = "string";
@@ -191,6 +191,7 @@ describe('Writer()', function(){
         };  
     }
     it('should write a sequence marker after 16k of data to a file stream', function(done) {
+        dataFile = __dirname + "/../test/data/test.writer.random.avro";
         var schema = {
             "name": "testLargeDataSet",
             "type": "record",
@@ -203,16 +204,16 @@ describe('Writer()', function(){
             ]
         };
         var writer = DataFile.Writer(schema, "null");
-        var fileStream = fs.createWriteStream(dataFile + ".random");
+        var fileStream = fs.createWriteStream(dataFile);
         writer.pipe(fileStream);
         writer
             .on('close', function() {
                 fs.existsSync(dataFile).should.be.true;
-                //fs.unlinkSync(dataFile + ".random");
+                fs.unlinkSync(dataFile);
                 done();
             })
             .on('error', function(err) {
-                //if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile + ".random");
+                if (fs.existsSync(dataFile)) fs.unlinkSync(dataFile);
                 done(err);
             });
         var i = 0;
@@ -282,7 +283,7 @@ describe('Writer()', function(){
                 .end();
         });
         it('should write a series of integers to a file and read them back as integers', function(done) {
-            aFile = __dirname + "/../test/test.int.avro";
+            aFile = __dirname + "/../test/data/test.int.avro";
             var schema = { "type": "int" };
             var writer = avroFile.open(aFile, schema, { flags: 'w', codec: "deflate" });
             writer
@@ -329,7 +330,7 @@ describe('Reader()', function(){
                     done(err);
                 })
                 .on('end', function(err) {
-                    count.should.equal(4100);
+                    count.should.equal(4096);
                     done();
                 })
                 .on('header', function(data) {
@@ -352,7 +353,7 @@ describe('Reader()', function(){
                     done(err);
                 })
                 .on('end', function(err) {
-                    count.should.equal(4100);
+                    count.should.equal(4096);
                     done();
                 })
                 .on('header', function(data) {

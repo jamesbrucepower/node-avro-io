@@ -1,0 +1,100 @@
+{
+  "type" : "record",
+  "name" : "AccessLogEvent",
+  "namespace" : "logging.avro.domain",
+  "fields" : [ {
+    "name" : "host",
+    "type" : "string"
+  }, {
+    "name" : "time",
+    "type" : "string"
+  }, {
+    "name" : "elapsedTime",
+    "type" : "long"
+  }, {
+    "name" : "tid",
+    "type" : "int"
+  }, {
+    "name" : "request",
+    "type" : {
+      "type" : "record",
+      "name" : "Request",
+      "fields" : [ {
+        "name" : "headers",
+        "type" : {
+          "type" : "map",
+          "values" : "string"
+        }
+      }, {
+        "name" : "method",
+        "type" : "string"
+      }, {
+        "name" : "path",
+        "type" : "string"
+      }, {
+        "name" : "queryString",
+        "type" : [ "string", "null" ]
+      }, {
+        "name" : "remoteIp",
+        "type" : "string"
+      }, {
+        "name" : "body",
+        "type" : {
+          "type" : "map",
+          "values" : "string"
+        }
+      } ]
+    }
+  }, {
+    "name" : "response",
+    "type" : {
+      "type" : "record",
+      "name" : "Response",
+      "fields" : [ {
+        "name" : "status",
+        "type" : "int"
+      }, {
+        "name" : "headers",
+        "type" : {
+          "type" : "map",
+          "values" : "string"
+        }
+      }, {
+        "name" : "body",
+        "type" : {
+          "type" : "map",
+          "values" : "string"
+        }
+      } ]
+    }
+  }, {
+    "name" : "customer",
+    "type" : {
+      "type" : "record",
+      "name" : "Customer",
+      "fields" : [ {
+        "name" : "data",
+        "type" : {
+          "type" : "map",
+          "values" : "string"
+        }
+      } ]
+    }
+  }, {
+    "name" : "exception",
+    "type" : [ {
+      "type" : "record",
+      "name" : "AppException",
+      "fields" : [ {
+        "name" : "class",
+        "type" : "string"
+      }, {
+        "name" : "message",
+        "type" : "string"
+      }, {
+        "name" : "stackTrace",
+        "type" : [ "null", "string" ]
+      } ]
+    }, "null" ]
+  } ]
+}
