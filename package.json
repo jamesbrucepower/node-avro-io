@@ -17,7 +17,7 @@
   "dependencies": {
     "underscore": "latest",
     "snappy": "latest",
-    "buffer-crc32": "~0.1.1"
+    "buffer-crc32": "latest"
   },
   "devDependencies": {
     "mocha": "latest",
