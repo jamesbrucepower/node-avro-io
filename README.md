@@ -40,7 +40,7 @@ var DataFile = require("node-avro-io").DataFile;
 
 var avro = DataFile.AvroFile();
 
-var reader = avro.open('test.avro', { flags: 'r' });
+var reader = avro.open('test.avro', 'string', { flags: 'r' });
 reader.on('data', function(data) {
     console.log(data);
 });
