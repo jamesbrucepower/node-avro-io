@@ -15,20 +15,20 @@
     "test": "make test"
   },
   "dependencies": {
-    "underscore": "latest",
-    "snappy": "latest",
-    "buffer-crc32": "latest"
+    "underscore": "^1.7.0",
+    "snappy": "^2.1.1",
+    "buffer-crc32": "^0.2.5"
   },
   "devDependencies": {
-    "mocha": "latest",
-    "should": "latest",
-    "jscoverage": "latest",
-    "buffertools": "latest",
-    "sprint": "latest",
-    "dtrace-provider": "latest"
+    "mocha": "^2.1.0",
+    "should": "^4.4.2",
+    "jscoverage": "^0.5.9",
+    "buffertools": "^2.1.2",
+    "sprint": "^0.3.1",
+    "dtrace-provider": "^0.3.1"
   },
   "engines": {
-    "node": "latest",
-    "npm": "latest"
+    "node": ">= 0.10.x",
+    "npm": ">= 1.4.x"
   }
 }

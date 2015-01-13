@@ -1,6 +1,6 @@
 var _ = require('underscore');
 var should = require('should');
-require('buffertools');
+require('buffertools').extend();
 
 var libpath = process.env['MOCHA_COV'] ? __dirname + '/../lib-cov/' : __dirname + '/../lib/';
 var IO = require(libpath + 'io');
@@ -282,7 +282,7 @@ describe('IO', function(){
             it('should encode an array as a series of blocks, each block consists of a long count value, followed by that many array items, a block with count zero indicates the end of the array', function(){
                 var schema = Avro.Schema({
                     "type": "array",
-                    "items": "long",
+                    "items": "long"
                 });
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
