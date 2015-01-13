@@ -423,6 +423,28 @@ describe('IO', function(){
                 writer.write(record, encoder);
                 block.toBuffer()[0].should.equal(4);
             });
+            it('should encode a union of a enum with null type and enum', function(){
+                var schema = Avro.Schema(
+                            [
+                                "null",
+                                {
+                                    "type"   : "enum",
+                                    "name"   : "a_enum",
+                                    "symbols": ["enum_1", "enum_2"]
+                                }
+                            ]
+                    );
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var record = {"a_enum": "enum_1"};
+                writer.write(record, encoder);
+                block.toBuffer().toString().should.equal("\u0002\u0001");
+                block.flush();
+                var record = null;
+                writer.write(record, encoder);
+                block.toBuffer()[0].should.equal(4);
+            });
             it('should encode a nested schema', function() {
                 var schema = Avro.Schema({
                     "fields": [
