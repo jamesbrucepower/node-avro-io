@@ -466,6 +466,37 @@ describe('IO', function(){
                 writer.write(record, encoder);
                 block.toBuffer()[0].should.equal(2);
             });
+            it('should encode a union of a array with null type and object', function () {
+                var schema = Avro.Schema(
+                    [
+                        "null",
+                        {
+                            "type": "record",
+                            "name": "nested_record",
+                            "fields": [
+                                {"name": "field1", "type": ["string", "null"], "default": ""},
+                                {"name": "field2", "type": ["int", "null"], "default": 0}
+                            ]
+                        }
+                    ]
+                );
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var record = {
+                    "field1": "data1",
+                    "field2": 23
+                };
+                writer.write(record, encoder);
+                block.toBuffer().equals(new Buffer([2, 0, 10, 100, 97, 116, 97, 49, 0, 46])).should.be.true;
+                block.flush();
+                var record = null;
+                writer.write(record, encoder);
+                block.toBuffer()[0].should.equal(0);
+            });
+
+
+
             it('should encode a nested schema', function() {
                 var schema = Avro.Schema({
                     "fields": [
@@ -569,11 +600,9 @@ describe('IO', function(){
                         body: {}
                     },
                     exception: {
-                        "AppException": {
-                            "class": "org.apache.avro",
-                            message: "An error occurred",
-                            stackTrace: "failed at line 1"
-                        }
+                        "class": "org.apache.avro",
+                        message: "An error occurred",
+                        stackTrace: "failed at line 1"
                     }
                 }
                 writer.write(log, encoder);
