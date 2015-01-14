@@ -437,13 +437,34 @@ describe('IO', function(){
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
                 var encoder = IO.BinaryEncoder(block);
-                var record = {"a_enum": "enum_1"};
+                var record = "enum_1";
                 writer.write(record, encoder);
-                block.toBuffer().toString().should.equal("\u0002\u0001");
+                block.toBuffer().toString().should.equal("\u0002\u0000");
                 block.flush();
                 var record = null;
                 writer.write(record, encoder);
-                block.toBuffer()[0].should.equal(4);
+                block.toBuffer()[0].should.equal(0);
+            });
+            it('should encode a union of a array with null type and enum', function(){
+                var schema = Avro.Schema(
+                    [
+                        {
+                            "type": "array",
+                            "items": "string"
+                        },
+                        "null"
+                    ]
+                );
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var record = ['testStr'];
+                writer.write(record, encoder);
+                block.toBuffer().equals(new Buffer([0,2,14,116,101,115,116,83,116,114,0])).should.be.true;
+                block.flush();
+                var record = null;
+                writer.write(record, encoder);
+                block.toBuffer()[0].should.equal(2);
             });
             it('should encode a nested schema', function() {
                 var schema = Avro.Schema({

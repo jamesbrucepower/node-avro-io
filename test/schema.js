@@ -240,7 +240,6 @@ function EnumSchema(symbols) {
     this.type = 'enum';
     this.symbols = symbols;
 }
-
 util.inherits(EnumSchema, Schema);
 
 function FixedSchema(name, size) {
