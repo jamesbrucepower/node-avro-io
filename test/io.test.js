@@ -63,6 +63,18 @@ describe('IO', function(){
                 block.toBuffer()[1].should.equal(148);
                 block.toBuffer()[2].should.equal(2);
             });
+
+            // http://lucene.apache.org/core/3_5_0/fileformats.html#VInt
+            it('should encode a long using variable-leng + zigzag encoding', function(){
+                encoder.writeLong(1425253517632);
+
+                block.toBuffer()[0].should.equal(128);
+                block.toBuffer()[1].should.equal(165);
+                block.toBuffer()[2].should.equal(214);
+                block.toBuffer()[3].should.equal(251);
+                block.toBuffer()[4].should.equal(250);
+                block.toBuffer()[5].should.equal(82);
+            });
         });
         describe('writeFloat()', function(){
             it('should encode a 32bit float in 4 bytes using java floatToIntBits method', function(){
