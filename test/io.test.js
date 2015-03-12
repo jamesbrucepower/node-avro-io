@@ -380,6 +380,40 @@ describe('IO', function(){
                 block.toBuffer()[16].should.equal(data.age * 2);
             })
         });
+
+        describe('bad writeRecord()', function(){
+            it('should encode a record by encoding the values of its fields in the order that they are declared', function(){
+                var schema = Avro.Schema({
+                    "name": "user",
+                    "type": "record",
+                    "fields": [
+                        {"name":"firstName","type": "string"},
+                        {"name":"lastName","type": "string"},
+                        {"name":"bah","type": "string"},
+                        {"name":"age","type": "int"}
+                    ]
+                });
+                var data = {
+                    "firstName": "bob",
+                    "lastName": "the_builder",
+                    "extra": "foo",
+                    "age": 40
+                }
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var thrown = false;
+                try {
+                    writer.writeRecord(schema, data, encoder);
+                } catch (err){
+                    err.fieldPath[0].should.equal("bah");
+                    thrown = true;
+                }
+
+                thrown.should.equal(true);
+            })
+        });
+
         describe('write()', function(){
             it('should encode an int/long with zig-zag encoding', function() {
                 var schema = Avro.Schema({
