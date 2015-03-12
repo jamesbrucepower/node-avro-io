@@ -389,13 +389,18 @@ describe('IO', function(){
                     "fields": [
                         {"name":"firstName","type": "string"},
                         {"name":"lastName","type": "string"},
-                        {"name":"bah","type": "string"},
+                        {"name":"nest","type": {
+                            "name":"nest",
+                            "type": "record",
+                            "fields": [{"name":"nField","type": "int"}]
+                        }},
                         {"name":"age","type": "int"}
                     ]
                 });
                 var data = {
                     "firstName": "bob",
                     "lastName": "the_builder",
+                    "nest": {nField: "badString"},
                     "extra": "foo",
                     "age": 40
                 }
@@ -406,7 +411,8 @@ describe('IO', function(){
                 try {
                     writer.writeRecord(schema, data, encoder);
                 } catch (err){
-                    err.fieldPath[0].should.equal("bah");
+                    err.fieldPath[0].should.equal("nest");
+                    err.fieldPath[1].should.equal("nField");
                     thrown = true;
                 }
 
