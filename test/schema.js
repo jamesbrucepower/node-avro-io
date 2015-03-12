@@ -130,8 +130,12 @@ _.extend(Schema.prototype, {
     
     validate: function(schema, datum){
         return true;
-    }, 
-    
+    },
+
+    validateAndThrow: function(schema, datum){
+        return true;
+    },
+
     toString: function() {
         return JSON.stringify({ type: this.type });
     }
