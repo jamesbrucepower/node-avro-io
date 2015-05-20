@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = require('lodash');
 var util = require('util');
 
 var AvroInvalidSchemaError = function(msg) { return new Error('AvroInvalidSchemaError: ' + util.format.apply(null, arguments)); }

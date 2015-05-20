@@ -15,10 +15,10 @@
     "test": "make test"
   },
   "dependencies": {
-    "underscore": "^1.7.0",
+    "lodash": "^2.4.1",
     "snappy": "^2.1.1",
     "buffer-crc32": "^0.2.5",
-    "long": "2.2.3"
+    "int64-native": "0.3.2"
   },
   "devDependencies": {
     "mocha": "^2.1.0",
