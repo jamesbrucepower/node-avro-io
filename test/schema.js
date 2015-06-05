@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = require('lodash');
 var util = require('util');
 
 var AvroInvalidSchemaError = function(msg) { return new Error('AvroInvalidSchemaError: ' + util.format.apply(null, arguments)); }
@@ -130,8 +130,12 @@ _.extend(Schema.prototype, {
     
     validate: function(schema, datum){
         return true;
-    }, 
-    
+    },
+
+    validateAndThrow: function(schema, datum){
+        return true;
+    },
+
     toString: function() {
         return JSON.stringify({ type: this.type });
     }
@@ -240,7 +244,6 @@ function EnumSchema(symbols) {
     this.type = 'enum';
     this.symbols = symbols;
 }
-
 util.inherits(EnumSchema, Schema);
 
 function FixedSchema(name, size) {

@@ -1,6 +1,6 @@
 var libpath = process.env['MOCHA_COV'] ? __dirname + '/../lib-cov/' : __dirname + '/../lib/';
 
-var _ = require('underscore');
+var _ = require('lodash');
 var should = require('should');
 
 var Avro = require(libpath + 'schema');

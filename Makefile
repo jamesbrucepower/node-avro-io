@@ -1,5 +1,5 @@
 PATH := ${PATH}:/usr/local/bin:./node_modules/.bin/
-AVRO_TOOLS_JAR = avro-tools-1.7.5.jar
+AVRO_TOOLS_JAR = avro-tools-1.7.7.jar
 AVRO_TOOLS = tools/$(AVRO_TOOLS_JAR)
 TEST_DATA = test/data
 REPORTER = spec
@@ -8,7 +8,7 @@ AVRO_FILES := $(AVRO_SRCS:.json=.avro)
 
 $(AVRO_TOOLS): 
 	-@[ -d "tools" ] || mkdir tools
-	-@[ -e $(AVRO_TOOLS) ] || (cd tools && curl -sO http://www.mirrorservice.org/sites/ftp.apache.org/avro/avro-1.7.5/java/$(AVRO_TOOLS_JAR))
+	-@[ -e $(AVRO_TOOLS) ] || (cd tools && curl -sO http://www.mirrorservice.org/sites/ftp.apache.org/avro/avro-1.7.7/java/$(AVRO_TOOLS_JAR))
 	
 test: $(AVRO_FILES)
 	@NODE_ENV=test ./node_modules/.bin/mocha -R $(REPORTER)

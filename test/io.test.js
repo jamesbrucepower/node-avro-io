@@ -1,6 +1,6 @@
-var _ = require('underscore');
+var _ = require('lodash');
 var should = require('should');
-require('buffertools');
+require('buffertools').extend();
 
 var libpath = process.env['MOCHA_COV'] ? __dirname + '/../lib-cov/' : __dirname + '/../lib/';
 var IO = require(libpath + 'io');
@@ -62,6 +62,18 @@ describe('IO', function(){
                 encoder.writeLong(138);
                 block.toBuffer()[1].should.equal(148);
                 block.toBuffer()[2].should.equal(2);
+            });
+
+            // http://lucene.apache.org/core/3_5_0/fileformats.html#VInt
+            it('should encode a long using variable-leng + zigzag encoding', function(){
+                encoder.writeLong(1425253517632);
+
+                block.toBuffer()[0].should.equal(128);
+                block.toBuffer()[1].should.equal(165);
+                block.toBuffer()[2].should.equal(214);
+                block.toBuffer()[3].should.equal(251);
+                block.toBuffer()[4].should.equal(250);
+                block.toBuffer()[5].should.equal(82);
             });
         });
         describe('writeFloat()', function(){
@@ -282,7 +294,7 @@ describe('IO', function(){
             it('should encode an array as a series of blocks, each block consists of a long count value, followed by that many array items, a block with count zero indicates the end of the array', function(){
                 var schema = Avro.Schema({
                     "type": "array",
-                    "items": "long",
+                    "items": "long"
                 });
                 var block = DataFile.Block();
                 var writer = IO.DatumWriter(schema);
@@ -368,6 +380,46 @@ describe('IO', function(){
                 block.toBuffer()[16].should.equal(data.age * 2);
             })
         });
+
+        describe('bad writeRecord()', function(){
+            it('should encode a record by encoding the values of its fields in the order that they are declared', function(){
+                var schema = Avro.Schema({
+                    "name": "user",
+                    "type": "record",
+                    "fields": [
+                        {"name":"firstName","type": "string"},
+                        {"name":"lastName","type": "string"},
+                        {"name":"nest","type": {
+                            "name":"nest",
+                            "type": "record",
+                            "fields": [{"name":"nField","type": "int"}]
+                        }},
+                        {"name":"age","type": "int"}
+                    ]
+                });
+                var data = {
+                    "firstName": "bob",
+                    "lastName": "the_builder",
+                    "nest": {nField: "badString"},
+                    "extra": "foo",
+                    "age": 40
+                }
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var thrown = false;
+                try {
+                    writer.writeRecord(schema, data, encoder);
+                } catch (err){
+                    err.fieldPath[0].should.equal("nest");
+                    err.fieldPath[1].should.equal("nField");
+                    thrown = true;
+                }
+
+                thrown.should.equal(true);
+            })
+        });
+
         describe('write()', function(){
             it('should encode an int/long with zig-zag encoding', function() {
                 var schema = Avro.Schema({
@@ -423,6 +475,80 @@ describe('IO', function(){
                 writer.write(record, encoder);
                 block.toBuffer()[0].should.equal(4);
             });
+            it('should encode a union of a enum with null type and enum', function(){
+                var schema = Avro.Schema(
+                            [
+                                "null",
+                                {
+                                    "type"   : "enum",
+                                    "name"   : "a_enum",
+                                    "symbols": ["enum_1", "enum_2"]
+                                }
+                            ]
+                    );
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var record = "enum_1";
+                writer.write(record, encoder);
+                block.toBuffer().toString().should.equal("\u0002\u0000");
+                block.flush();
+                var record = null;
+                writer.write(record, encoder);
+                block.toBuffer()[0].should.equal(0);
+            });
+            it('should encode a union of a array with null type and enum', function(){
+                var schema = Avro.Schema(
+                    [
+                        {
+                            "type": "array",
+                            "items": "string"
+                        },
+                        "null"
+                    ]
+                );
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var record = ['testStr'];
+                writer.write(record, encoder);
+                block.toBuffer().equals(new Buffer([0,2,14,116,101,115,116,83,116,114,0])).should.be.true;
+                block.flush();
+                var record = null;
+                writer.write(record, encoder);
+                block.toBuffer()[0].should.equal(2);
+            });
+            it('should encode a union of a array with null type and object', function () {
+                var schema = Avro.Schema(
+                    [
+                        "null",
+                        {
+                            "type": "record",
+                            "name": "nested_record",
+                            "fields": [
+                                {"name": "field1", "type": ["string", "null"], "default": ""},
+                                {"name": "field2", "type": ["int", "null"], "default": 0}
+                            ]
+                        }
+                    ]
+                );
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var record = {
+                    "field1": "data1",
+                    "field2": 23
+                };
+                writer.write(record, encoder);
+                block.toBuffer().equals(new Buffer([2, 0, 10, 100, 97, 116, 97, 49, 0, 46])).should.be.true;
+                block.flush();
+                var record = null;
+                writer.write(record, encoder);
+                block.toBuffer()[0].should.equal(0);
+            });
+
+
+
             it('should encode a nested schema', function() {
                 var schema = Avro.Schema({
                     "fields": [
@@ -526,11 +652,9 @@ describe('IO', function(){
                         body: {}
                     },
                     exception: {
-                        "AppException": {
-                            "class": "org.apache.avro",
-                            message: "An error occurred",
-                            stackTrace: "failed at line 1"
-                        }
+                        "class": "org.apache.avro",
+                        message: "An error occurred",
+                        stackTrace: "failed at line 1"
                     }
                 }
                 writer.write(log, encoder);
