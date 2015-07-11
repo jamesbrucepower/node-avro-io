@@ -18,16 +18,16 @@ describe('Schema()', function(){
                 var schema = Avro.Schema();
                 schema.parse();
             }).should.throwError();
-        });      
+        });
         it('should return a PrimitiveSchema if any of the primitive types are passed as schema arguments or as a type property', function(){
             var primitives = ['null', 'boolean', 'int', 'long', 'float', 'double', 'bytes', 'string'];
             _.each(primitives, function(type) {
                 var schema = Avro.Schema(type);
                 schema.should.be.an.instanceof(Avro.PrimitiveSchema);
-                schema.type.should.equal(type);  
+                schema.type.should.equal(type);
                 schema = Avro.Schema({ "type": type });
                 schema.should.be.an.instanceof(Avro.PrimitiveSchema);
-                schema.type.should.equal(type);                 
+                schema.type.should.equal(type);
             });
         });
         it('should throw an error is an unrecognized primitive type is provided', function(){
@@ -45,29 +45,29 @@ describe('Schema()', function(){
         });
         it('should throw an error if an empty array of unions is passed', function(){
             (function() {
-                var schema = Avro.Schema([]);                
+                var schema = Avro.Schema([]);
             }).should.throwError();
         })
         it('should return a RecordSchema if an object is passed with a type "record"', function(){
-            var schema = Avro.Schema({ 
-                name: "myrecord", 
-                type: "record", 
+            var schema = Avro.Schema({
+                name: "myrecord",
+                type: "record",
                 fields: [
                     {
-                        "name": "method", 
+                        "name": "method",
                         "type": "string"
-                    }, 
+                    },
                     {
-                        "name": "path", 
+                        "name": "path",
                         "type": "string"
-                    }, 
+                    },
                     {
-                        "name": "queryString", 
+                        "name": "queryString",
                         "type": [
-                            "string", 
+                            "string",
                             "null"
                         ]
-                    }, 
+                    },
                 ]
             });
             schema.should.be.an.instanceof(Avro.RecordSchema);
@@ -77,9 +77,9 @@ describe('Schema()', function(){
         });
         it('should return a MapSchema if an object is passed with a type "map"', function(){
             var schema = Avro.Schema({
-                "name": "mapSchemaTest", 
+                "name": "mapSchemaTest",
                 "type": {
-                    "type": "map", 
+                    "type": "map",
                     "values": "bytes"
                 }
             });
@@ -100,9 +100,9 @@ describe('Schema()', function(){
         });
         it('should return a FixedSchema if an object is passed with a type "fixed"', function(){
             var schema = Avro.Schema({
-                "name": "fixedSchemaTest", 
+                "name": "fixedSchemaTest",
                 "type": {
-                    "type": "fixed", 
+                    "type": "fixed",
                     "size": 50
                 }
             });
@@ -119,5 +119,46 @@ describe('Schema()', function(){
             schema.symbols.should.have.length(4);
             schema.type.should.equal("enum");
         })
+        it('should allow for self references by name for non-primitive data types', function() {
+            var schema = Avro.Schema({
+                "name": "document",
+                "type": [
+                    {
+                        "type": "record",
+                        "name": "Document",
+                        "fields": [
+                            {
+                                "name": "test",
+                                "type": [
+                                    "null",
+                                    "string"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "record",
+                        "name": "Fax",
+                        "fields": [
+                            {
+                              "name": "data",
+                              "type": [
+                                "null",
+                                "Document"
+                              ],
+                              "default": null
+                            }
+                        ]
+                    }
+                ]
+            });
+
+            // Ensure that the the reference to the non-primitive type 'Document'
+            // in the second element of the type array now has the value of the
+            // original 'Document'
+            var original = schema.schemas[0];
+            var selfReferenced = schema.schemas[1].fields[0].type.schemas[1].type;
+            selfReferenced.should.equal(original);
+        });
     })
 });
