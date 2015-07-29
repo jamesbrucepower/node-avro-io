@@ -51,6 +51,7 @@ function makeFullyQualifiedTypeName(schema, namespace) {
 }
 
 function Schema(schema, namespace) {
+    this.schemaRecords = {};
 
     if ((this instanceof arguments.callee) === false)
         return new arguments.callee(schema, namespace);
@@ -153,7 +154,7 @@ _.extend(Schema.prototype, {
 function PrimitiveSchema(schema, type) {
 
     if (!_.isString(type)) {
-        throw new AvroErrors.InvalidSchemaError('Primitive type name must be a string');
+        throw new AvroInvalidSchemaError('Primitive type name must be a string');
     }
 
     if (!_.contains(PRIMITIVE_TYPES, type)) {
