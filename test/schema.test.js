@@ -160,5 +160,50 @@ describe('Schema()', function(){
             var selfReferenced = schema.schemas[1].fields[0].type.schemas[1].type;
             selfReferenced.should.equal(original);
         });
+        // This test is disabled due to the current inability to do a late
+        // checking. In this case we would desire the first reference to
+        // Document not initially fail. It would wait until it has reached a
+        // definition for Document or fail when it reaches the end of the schema
+        it.skip('should allow for self references that are defined later', function() {
+            var schema = Avro.Schema({
+                "name": "document",
+                "type": [
+                    {
+                        "type": "record",
+                        "name": "Fax",
+                        "fields": [
+                            {
+                              "name": "data",
+                              "type": [
+                                "null",
+                                "Document"
+                              ],
+                              "default": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "record",
+                        "name": "Document",
+                        "fields": [
+                            {
+                                "name": "test",
+                                "type": [
+                                    "null",
+                                    "string"
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            });
+
+            // Ensure that the the reference to the non-primitive type 'Document'
+            // in the second element of the type array now has the value of the
+            // original 'Document'
+            var original = schema.schemas[0];
+            var selfReferenced = schema.schemas[1].fields[0].type.schemas[1].type;
+            selfReferenced.should.equal(original);
+        });
     })
 });

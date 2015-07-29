@@ -60,7 +60,6 @@ function Schema(schema, namespace) {
 }
 
 _.extend(Schema.prototype, {
-    schemaRecords: {},
 
     parse: function(schema, namespace) {
         var self = this;
@@ -68,7 +67,7 @@ _.extend(Schema.prototype, {
             throw new AvroInvalidSchemaError('schema is null, in parentSchema: %s',
                                              JSON.stringify(parentSchema));
         } else if (_.isString(schema)) {
-            return new PrimitiveSchema(schema);
+            return new PrimitiveSchema(this, schema);
         } else if (_.isObject(schema) && !_.isArray(schema)) {
             if (schema.type === 'record') {
                 if (!_.has(schema, 'fields')) {
@@ -146,22 +145,19 @@ _.extend(Schema.prototype, {
         return true;
     },
 
-    getSchemaRecords: function() {
-        return this.schemaRecords;
-    },
-
     toString: function() {
         return JSON.stringify({ type: this.type });
     }
 });
 
-function PrimitiveSchema(type) {
+function PrimitiveSchema(schema, type) {
 
     if (!_.isString(type)) {
-        throw new AvroInvalidSchemaError('Primitive type name must be a string');
+        throw new AvroErrors.InvalidSchemaError('Primitive type name must be a string');
     }
+
     if (!_.contains(PRIMITIVE_TYPES, type)) {
-        var record = this.getSchemaRecords()[type];
+        var record = schema.schemaRecords[type];
 
         if (record) {
             this.type = record;
