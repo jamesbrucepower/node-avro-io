@@ -165,7 +165,7 @@ function PrimitiveSchema(schema, type) {
             return;
         }
 
-        throw new AvroErrors.InvalidSchemaError('Primitive type must be one of: %s; got %s',
+        throw new AvroErrors.InvalidSchemaError('Primitive type must be one of: %s; or a previously self-referenced type. Got %s',
                                          JSON.stringify(PRIMITIVE_TYPES), type);
     }
 
