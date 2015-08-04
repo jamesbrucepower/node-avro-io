@@ -51,10 +51,11 @@ function makeFullyQualifiedTypeName(schema, namespace) {
 }
 
 function Schema(schema, namespace) {
-        
+    this.schemaRecords = {};
+
     if ((this instanceof arguments.callee) === false)
         return new arguments.callee(schema, namespace);
-        
+
     if (!_.isUndefined(schema))
         return this.parse(schema, namespace);
 }
@@ -67,7 +68,7 @@ _.extend(Schema.prototype, {
             throw new AvroInvalidSchemaError('schema is null, in parentSchema: %s',
                                              JSON.stringify(parentSchema));
         } else if (_.isString(schema)) {
-            return new PrimitiveSchema(schema);
+            return new PrimitiveSchema(this, schema);
         } else if (_.isObject(schema) && !_.isArray(schema)) {
             if (schema.type === 'record') {
                 if (!_.has(schema, 'fields')) {
@@ -77,10 +78,19 @@ _.extend(Schema.prototype, {
                     throw new AvroInvalidSchemaError('record must specify "name", got %s',
                                                      JSON.stringify(schema));
                 } else {
-                    return new RecordSchema(schema.name, schema.namespace, 
-                                            _.map(schema.fields, function(field) {
-                                                return new FieldSchema(field.name, self.parse(field, namespace));
-                                            }));
+                    var record = new RecordSchema(schema.name, schema.namespace,
+                                        _.map(schema.fields, function(field) {
+                                            return new FieldSchema(field.name, self.parse(field, namespace));
+                                        }));
+                    // Store the schema records into a map of schema name to
+                    // record, so we can compare against it later if we find
+                    // something that isn't a primitive data type, but may
+                    // be a self-reference
+                    if (!this.schemaRecords[schema.name]) {
+                        this.schemaRecords[schema.name] = record;
+                    }
+
+                    return record;
                 }
             } else if (schema.type === 'enum') {
                 if (_.has(schema, 'symbols')) {
@@ -110,7 +120,7 @@ _.extend(Schema.prototype, {
                     throw new AvroInvalidSchemaError('fixed must specify "size", got %s',
                                                          JSON.stringify(schema));
                 }
-            } else if (_.has(schema, 'type')) {   
+            } else if (_.has(schema, 'type')) {
                 return this.parse(schema.type, namespace);
             } else {
                 throw new AvroInvalidSchemaError('not yet implemented: %j', schema);
@@ -119,15 +129,15 @@ _.extend(Schema.prototype, {
             if (_.isEmpty(schema)) {
                 throw new AvroInvalidSchemaError('unions must have at least 1 branch');
             }
-            var branchTypes = _.map(schema, function(type) { 
-                return self.parse(type, schema, namespace); 
+            var branchTypes = _.map(schema, function(type) {
+                return self.parse(type, schema, namespace);
             });
             return new UnionSchema(branchTypes, namespace);
         } else {
             throw new AvroInvalidSchemaError('unexpected Javascript type for schema: ' + (typeof schema));
         }
-    }, 
-    
+    },
+
     validate: function(schema, datum){
         return true;
     },
@@ -141,13 +151,21 @@ _.extend(Schema.prototype, {
     }
 });
 
-function PrimitiveSchema(type) {
+function PrimitiveSchema(schema, type) {
 
     if (!_.isString(type)) {
         throw new AvroInvalidSchemaError('Primitive type name must be a string');
     }
+
     if (!_.contains(PRIMITIVE_TYPES, type)) {
-        throw new AvroInvalidSchemaError('Primitive type must be one of: %s; got %s',
+        var record = schema.schemaRecords[type];
+
+        if (record) {
+            this.type = record;
+            return;
+        }
+
+        throw new AvroErrors.InvalidSchemaError('Primitive type must be one of: %s; or a previously self-referenced type. Got %s',
                                          JSON.stringify(PRIMITIVE_TYPES), type);
     }
 
@@ -160,11 +178,11 @@ function FieldSchema(name, type) {
     if (!_.isString(name)) {
         throw new AvroInvalidSchemaError('Field name must be string');
     }
-    
+
     if (!(type instanceof Schema)) {
         throw new AvroInvalidSchemaError('Field type must be a Schema object');
     }
-    
+
     this.name = name;
     this.type = type;
 }
@@ -172,7 +190,7 @@ function FieldSchema(name, type) {
 //util.inherits(FieldSchema, Schema);
 
 function NamedSchema(name, namespace) {
-    
+
 }
 
 function RecordSchema(name, namespace, fields) {
@@ -192,7 +210,7 @@ function RecordSchema(name, namespace, fields) {
     this.name = name;
     this.namespace = namespace;
     this.fields = fields;
-    
+
     this.fieldsHash = _.reduce(fields, function(hash, field) {
         hash[field.name] = field;
         return hash;
@@ -233,7 +251,7 @@ util.inherits(UnionSchema, Schema);
 
 function EnumSchema(symbols) {
     if (!_.isArray(symbols)) {
-        throw new AvroInvalidSchemaError('Enum must have array of symbols, got %s', 
+        throw new AvroInvalidSchemaError('Enum must have array of symbols, got %s',
                                          JSON.stringify(symbols));
     }
     if (!_.all(symbols, function(symbol) { return _.isString(symbol); })) {
@@ -247,7 +265,7 @@ function EnumSchema(symbols) {
 util.inherits(EnumSchema, Schema);
 
 function FixedSchema(name, size) {
-    
+
     this.type = 'fixed';
     this.name = name;
     this.size = size;
