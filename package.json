@@ -19,7 +19,7 @@
     "lodash": "^2.4.1",
     "snappy": "^2.1.1",
     "buffer-crc32": "^0.2.5",
-    "int64-native": "0.3.2"
+    "int64-native-node12": "0.4.0"
   },
   "devDependencies": {
     "mocha": "^2.1.0",
