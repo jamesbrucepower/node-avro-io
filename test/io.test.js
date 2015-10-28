@@ -819,7 +819,7 @@ describe('IO', function(){
             });
         })
         describe('readEnum()', function(){
-            it('should decode and return an enumerated type', function(){
+            it('should decode and return an enumerated type from the end of the list', function(){
                 var schema = Avro.Schema({
                     "type": "enum",
                     "name": "phonetics",
@@ -828,6 +828,16 @@ describe('IO', function(){
                 var reader = IO.DatumReader(schema);
                 block.write(new Buffer([0x06]));
                 reader.readEnum(schema, schema, decoder).should.equal("Delta");
+            })
+            it('should decode and return an enumerated type from the start of the list', function(){
+                var schema = Avro.Schema({
+                    "type": "enum",
+                    "name": "phonetics",
+                    "symbols": [ "Alpha", "Bravo", "Charlie", "Delta"]
+                });
+                var reader = IO.DatumReader(schema);
+                block.write(new Buffer([0x00]));
+                reader.readEnum(schema, schema, decoder).should.equal("Alpha");
             })
         })
         describe('readArray()', function(){
