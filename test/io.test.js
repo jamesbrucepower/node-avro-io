@@ -345,7 +345,7 @@ describe('IO', function(){
                 block.toBuffer().length.should.equal(data.length + 2);
                 block.toBuffer()[0].should.equal(0);
                 block.toBuffer()[1].should.equal(data.length * 2);
-                block.toBuffer().slice(2).toString().should.equal(data);   
+                block.toBuffer().slice(2).toString().should.equal(data);
                 block.flush();
                 writer.writeUnion(schema, 44, encoder);
                 block.toBuffer().length.should.equal(2);
@@ -553,85 +553,85 @@ describe('IO', function(){
                 var schema = Avro.Schema({
                     "fields": [
                         {
-                            "name": "host", 
+                            "name": "host",
                             "type": "string"
-                        }, 
+                        },
                         {
-                            "name": "time", 
+                            "name": "time",
                             "type": "string"
-                        }, 
+                        },
                         {
-                            "name": "elapsedTime", 
+                            "name": "elapsedTime",
                             "type": "long"
-                        }, 
+                        },
                         {
-                            "name": "request", 
+                            "name": "request",
                             "type": {
-                                "name": "Request", 
+                                "name": "Request",
                                 "type": "record",
                                 "fields": [
                                     {
-                                        "name": "headers", 
+                                        "name": "headers",
                                         "type": {
-                                            "type": "map", 
+                                            "type": "map",
                                             "values": "string"
                                         }
-                                    }, 
+                                    },
                                     {
-                                        "name": "method", 
+                                        "name": "method",
                                         "type": "string"
-                                    }, 
+                                    },
                                     {
-                                        "name": "path", 
+                                        "name": "path",
                                         "type": "string"
-                                    }, 
+                                    },
                                     {
-                                        "name": "queryString", 
+                                        "name": "queryString",
                                         "type": [
-                                            "string", 
+                                            "string",
                                             "null"
                                         ]
-                                    }, 
+                                    },
                                     {
-                                        "name": "body", 
+                                        "name": "body",
                                         "type": {
-                                            "type": "map", 
+                                            "type": "map",
                                             "values": "string"
                                         }
                                     }
                                 ]
                             }
-                        }, 
+                        },
                         {
-                            "name": "exception", 
+                            "name": "exception",
                             "type": [
                                 {
                                     "fields": [
                                         {
-                                            "name": "class", 
+                                            "name": "class",
                                             "type": "string"
-                                        }, 
+                                        },
                                         {
-                                            "name": "message", 
+                                            "name": "message",
                                             "type": "string"
-                                        }, 
+                                        },
                                         {
-                                            "name": "stackTrace", 
+                                            "name": "stackTrace",
                                             "type": [
-                                                "null", 
+                                                "null",
                                                 "string"
                                             ]
                                         }
-                                    ], 
-                                    "name": "AppException", 
+                                    ],
+                                    "name": "AppException",
                                     "type": "record"
-                                }, 
+                                },
                                 "null"
                             ]
                         }
-                    ], 
-                    "name": "LogEvent", 
-                    "namespace": "e.d.c.b.a", 
+                    ],
+                    "name": "LogEvent",
+                    "namespace": "e.d.c.b.a",
                     "type": "record"
                 });
                 var block = DataFile.Block();
@@ -640,7 +640,7 @@ describe('IO', function(){
                 var log = {
                     host: "testhostA",
                     time: "1970-01-01T00:00Z",
-                    elapsedTime: 123456789, 
+                    elapsedTime: 123456789,
                     request: {
                         headers: {
                             "user-agent": "firefox",
@@ -682,6 +682,141 @@ describe('IO', function(){
                                                     0x74, 0x20, 0x6c, 0x69, 0x6e, 0x65, 0x20, 0x31])).should.be.true;
             })
         });
+
+        it('should encode a schema with another dependent schema', function() {
+            var child = Avro.Schema({
+                "name": "Request",
+                "namespace": "e.d.c.b.a",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "headers",
+                        "type": {
+                            "type": "map",
+                            "values": "string"
+                        }
+                    },
+                    {
+                        "name": "method",
+                        "type": "string"
+                    },
+                    {
+                        "name": "path",
+                        "type": "string"
+                    },
+                    {
+                        "name": "queryString",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "type": {
+                            "type": "map",
+                            "values": "string"
+                        }
+                    }
+                ]
+            });
+            var parent = Avro.Schema({
+                "fields": [
+                    {
+                        "name": "host",
+                        "type": "string"
+                    },
+                    {
+                        "name": "time",
+                        "type": "string"
+                    },
+                    {
+                        "name": "elapsedTime",
+                        "type": "long"
+                    },
+                    {
+                        "name": "request",
+                        "type": "e.d.c.b.a.Request"
+                    },
+                    {
+                        "name": "exception",
+                        "type": [
+                            {
+                                "fields": [
+                                    {
+                                        "name": "class",
+                                        "type": "string"
+                                    },
+                                    {
+                                        "name": "message",
+                                        "type": "string"
+                                    },
+                                    {
+                                        "name": "stackTrace",
+                                        "type": [
+                                            "null",
+                                            "string"
+                                        ]
+                                    }
+                                ],
+                                "name": "AppException",
+                                "type": "record"
+                            },
+                            "null"
+                        ]
+                    }
+                ],
+                "name": "LogEvent",
+                "namespace": "e.d.c.b.a",
+                "type": "record"
+            }, 'f.e.d.c.b.a', [child]);
+            var block = DataFile.Block();
+            var writer = IO.DatumWriter(parent);
+            var encoder = IO.BinaryEncoder(block);
+            var log = {
+                host: "testhostA",
+                time: "1970-01-01T00:00Z",
+                elapsedTime: 123456789,
+                request: {
+                    headers: {
+                        "user-agent": "firefox",
+                        "remote-ip": "0.0.0.0"
+                    },
+                    method: "GET",
+                    path: "/basepath/object",
+                    queryString: "param1=test1&param2=test2",
+                    body: {}
+                },
+                exception: {
+                    "class": "org.apache.avro",
+                    message: "An error occurred",
+                    stackTrace: "failed at line 1"
+                }
+            }
+            writer.write(log, encoder);
+            block.toBuffer().equals(new Buffer([0x12, 0x74, 0x65, 0x73, 0x74,
+                                                0x68, 0x6f, 0x73, 0x74, 0x41, 0x22, 0x31, 0x39,
+                                                0x37, 0x30, 0x2d, 0x30, 0x31, 0x2d, 0x30, 0x31,
+                                                0x54, 0x30, 0x30, 0x3a, 0x30, 0x30, 0x5a, 0xaa,
+                                                0xb4, 0xde, 0x75, 0x04, 0x14, 0x75, 0x73, 0x65,
+                                                0x72, 0x2d, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x0e,
+                                                0x66, 0x69, 0x72, 0x65, 0x66, 0x6f, 0x78, 0x12,
+                                                0x72, 0x65, 0x6d, 0x6f, 0x74, 0x65, 0x2d, 0x69,
+                                                0x70, 0x0e, 0x30, 0x2e, 0x30, 0x2e, 0x30, 0x2e,
+                                                0x30, 0x00, 0x06, 0x47, 0x45, 0x54, 0x20, 0x2f,
+                                                0x62, 0x61, 0x73, 0x65, 0x70, 0x61, 0x74, 0x68,
+                                                0x2f, 0x6f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x00,
+                                                0x32, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x31, 0x3d,
+                                                0x74, 0x65, 0x73, 0x74, 0x31, 0x26, 0x70, 0x61,
+                                                0x72, 0x61, 0x6d, 0x32, 0x3d, 0x74, 0x65, 0x73,
+                                                0x74, 0x32, 0x00, 0x00, 0x1e, 0x6f, 0x72, 0x67,
+                                                0x2e, 0x61, 0x70, 0x61, 0x63, 0x68, 0x65, 0x2e,
+                                                0x61, 0x76, 0x72, 0x6f, 0x22, 0x41, 0x6e, 0x20,
+                                                0x65, 0x72, 0x72, 0x6f, 0x72, 0x20, 0x6f, 0x63,
+                                                0x63, 0x75, 0x72, 0x72, 0x65, 0x64, 0x02, 0x20,
+                                                0x66, 0x61, 0x69, 0x6c, 0x65, 0x64, 0x20, 0x61,
+                                                0x74, 0x20, 0x6c, 0x69, 0x6e, 0x65, 0x20, 0x31])).should.be.true;
+        })
     });
     describe('DatumReader()', function(){
         var block, decoder;
@@ -714,8 +849,8 @@ describe('IO', function(){
                     {"name":"testBytes","type": "bytes"},
                     {"name":"testFixed","type": "fixed", "size": 5},
                     {"name":"testEnum","type": "enum", "symbols": ["Alpha", "Bravo", "Charlie", "Delta"]},
-                    {"name":"testArray","type": "array", "items": "long"},                    
-                    {"name":"testMap","type": { "type":"map", "values": "int"}},                    
+                    {"name":"testArray","type": "array", "items": "long"},
+                    {"name":"testMap","type": { "type":"map", "values": "int"}},
                     {"name":"testUnion","type":["string", "int", "null"]}
                 ]
             });
@@ -724,22 +859,22 @@ describe('IO', function(){
             var block = DataFile.Block();
             var decoder = IO.BinaryDecoder(block);
             block.write(new Buffer([/*purposely blank*/
-                                    0x01, 
+                                    0x01,
                                     0x08, 0x74, 0x65, 0x73, 0x74,
-                                    0x08, 
+                                    0x08,
                                     0x94, 0x02,
                                     0x99, 0xf8, 0xa9, 0x3f,
                                     0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40,
                                     0x0c, 0xF4, 0x44, 0x45, 0x7f, 0x28, 0x6C,
                                     0x19, 0x69, 0x29, 0x3f, 0xff,
-                                    0x04, 
+                                    0x04,
                                     0x08, 0x14, 0x69, 0x10, 0xF1, 0x01, 0x00,
                                     0x06, 0x06, 0x6f, 0x6e, 0x65, 0x20, 0x06, 0x74, 0x77, 0x6f, 0x10, 0x0a, 0x74, 0x68, 0x72, 0x65, 0x65, 0x40, 0x00,
                                     0x04]));
             it('should read and decode a null', function(){
                 var result = reader.readData(schema.fieldsHash["testNull"].type, null, decoder);
                 should.not.exist(result);
-                block.offset.should.equal(0);                
+                block.offset.should.equal(0);
             });
             it('should read and decode a boolean', function(){
                 var result = reader.readData(schema.fieldsHash["testBoolean"].type, null, decoder);
@@ -810,12 +945,12 @@ describe('IO', function(){
             it('should throw an error if the writersSchema provided is not a Schema object', function(){
                 (function() {
                     reader.readData("invalid", null, decoder);
-                }).should.throwError();              
+                }).should.throwError();
             });
             it('should throw an error if the readersSchema provided is not a Schema object', function(){
                 (function() {
                     reader.readData(Avro.schema({"type":"string"}), "invalid", decoder);
-                }).should.throwError();              
+                }).should.throwError();
             });
         })
         describe('readEnum()', function(){
@@ -848,9 +983,9 @@ describe('IO', function(){
                 });
                 var data = ["apples", "banannas", "oranges", "pears", "grapes"];
                 var reader = IO.DatumReader(schema);
-                block.write(new Buffer([0x0a, 0x0c, 0x61, 0x70, 0x70, 0x6c, 0x65, 0x73, 0x10, 0x62, 0x61, 
-                                        0x6e, 0x61, 0x6e, 0x6e, 0x61, 0x73, 0x0e, 0x6f, 0x72, 0x61, 0x6e, 
-                                        0x67, 0x65, 0x73, 0x0a, 0x70, 0x65, 0x61, 0x72, 0x73, 0x0c, 0x67, 
+                block.write(new Buffer([0x0a, 0x0c, 0x61, 0x70, 0x70, 0x6c, 0x65, 0x73, 0x10, 0x62, 0x61,
+                                        0x6e, 0x61, 0x6e, 0x6e, 0x61, 0x73, 0x0e, 0x6f, 0x72, 0x61, 0x6e,
+                                        0x67, 0x65, 0x73, 0x0a, 0x70, 0x65, 0x61, 0x72, 0x73, 0x0c, 0x67,
                                         0x72, 0x61, 0x70, 0x65, 0x73, 0x00]));
                 reader.readArray(schema, schema, decoder).should.eql(data);
             })
@@ -864,11 +999,11 @@ describe('IO', function(){
                         "values": "string"
                     }
                 });
-                var data = [ 6, 20, 117, 115, 101, 114, 45, 97, 103, 101, 110, 116, 14, 102, 105, 114, 101, 
-                             102, 111, 120, 18, 114, 101, 109, 111, 116, 101, 45, 105, 112, 16, 49, 48, 46, 
-                             48, 46, 48, 46, 48, 24, 99, 111, 110, 116, 101, 110, 116, 45, 116, 121, 112, 
-                             101, 32, 97, 112, 112, 108, 105, 99, 97, 105, 116, 111, 110, 47, 106, 115, 111, 
-                             110, 0];            
+                var data = [ 6, 20, 117, 115, 101, 114, 45, 97, 103, 101, 110, 116, 14, 102, 105, 114, 101,
+                             102, 111, 120, 18, 114, 101, 109, 111, 116, 101, 45, 105, 112, 16, 49, 48, 46,
+                             48, 46, 48, 46, 48, 24, 99, 111, 110, 116, 101, 110, 116, 45, 116, 121, 112,
+                             101, 32, 97, 112, 112, 108, 105, 99, 97, 105, 116, 111, 110, 47, 106, 115, 111,
+                             110, 0];
                 block.write(new Buffer(data));
                 var reader = IO.DatumReader(schema);
                 var map = reader.readMap(schema, schema, decoder);
@@ -924,8 +1059,8 @@ describe('IO', function(){
                     {"name":"testBytes","type": "bytes"},
                     {"name":"testFixed","type": "fixed", "size": 5},
                     {"name":"testEnum","type": "enum", "symbols": ["Alpha", "Bravo", "Charlie", "Delta"]},
-                    {"name":"testArray","type": "array", "items": "long"},                    
-                    {"name":"testMap","type": { "type":"map", "values": "int"}},                    
+                    {"name":"testArray","type": "array", "items": "long"},
+                    {"name":"testMap","type": { "type":"map", "values": "int"}},
                     {"name":"testUnion","type":["string", "int", "null"]}
                 ]
             });
@@ -933,15 +1068,15 @@ describe('IO', function(){
             var block = DataFile.Block();
             var decoder = IO.BinaryDecoder(block);
             block.write(new Buffer([/*purposely blank*/
-                                    0x01, 
+                                    0x01,
                                     0x08, 0x74, 0x65, 0x73, 0x74,
-                                    0x08, 
+                                    0x08,
                                     0x94, 0x02,
                                     0x99, 0xf8, 0xa9, 0x3f,
                                     0xb3, 0xb6, 0x76, 0x2a, 0x83, 0xfa, 0x21, 0x40,
                                     0x0c, 0xF4, 0x44, 0x45, 0x7f, 0x28, 0x6C,
                                     0x19, 0x69, 0x29, 0x3f, 0xff,
-                                    0x04, 
+                                    0x04,
                                     0x08, 0x14, 0x69, 0x10, 0xF1, 0x01, 0x00,
                                     0x06, 0x06, 0x6f, 0x6e, 0x65, 0x20, 0x06, 0x74, 0x77, 0x6f, 0x10, 0x0a, 0x74, 0x68, 0x72, 0x65, 0x65, 0x40, 0x00,
                                     0x04]));
