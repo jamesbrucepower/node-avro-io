@@ -681,6 +681,77 @@ describe('IO', function(){
                                                     0x66, 0x61, 0x69, 0x6c, 0x65, 0x64, 0x20, 0x61,
                                                     0x74, 0x20, 0x6c, 0x69, 0x6e, 0x65, 0x20, 0x31])).should.be.true;
             })
+
+        });
+
+        it('should encode a record with a nested record correctly', function(){
+            var schema = Avro.Schema({
+                "name": "user",
+                "type": "record",
+                "fields": [
+                    {"name":"firstName","type": "string"},
+                    {"name":"lastName","type": "string"},
+                    {"name":"age","type": "int"},
+                    {
+                        "name":"dog",
+                        "type": "record",
+                        "fields": [
+                            {"name":"name","type": "string"},
+                            {"name":"age","type": "int"}
+                        ]
+                    }
+                ]
+            });
+            var data = {
+                "firstName": "bob",
+                "lastName": "the_builder",
+                "age": 40,
+                "dog": {name: "sparky", "age": 3}
+            };
+            var block = DataFile.Block();
+            var writer = IO.DatumWriter(schema);
+            var encoder = IO.BinaryEncoder(block);
+            writer.write(data, encoder);
+            block.toBuffer().equals(new Buffer([ 
+                0x06, 0x62, 0x6f, 0x62, 0x16, 0x74, 0x68, 0x65, 0x5f, 0x62, 0x75, 0x69, 
+                0x6c, 0x64, 0x65, 0x72, 0x50, 0x0c, 0x73, 0x70, 0x61, 0x72, 0x6b, 0x79, 
+                0x06])).should.be.true;
+        });
+
+        it('should encode a record with two nested records correctly', function(){
+            var schema = Avro.Schema({
+                "name": "user",
+                "type": "record",
+                "fields": [
+                    {"name":"firstName","type": "string"},
+                    {"name":"lastName","type": "string"},
+                    {"name":"age","type": "int"},
+                    {
+                        "name":"dog",
+                        "type": "record",
+                        "fields": [
+                            {"name":"name","type": "string"},
+                            {"name":"age","type": "int"}
+                        ]
+                    },
+                    {"name":"dog2","type": "dog"}
+                ]
+            });
+            var data = {
+                "firstName": "bob",
+                "lastName": "the_builder",
+                "age": 40,
+                "dog": {name: "sparky", "age": 3},
+                "dog2": {name: "spot", "age": 1}
+            };
+            var block = DataFile.Block();
+            var writer = IO.DatumWriter(schema);
+            var encoder = IO.BinaryEncoder(block);
+            writer.write(data, encoder);
+            block.toBuffer().equals(new Buffer([
+                0x06, 0x62, 0x6f, 0x62, 0x16, 0x74, 0x68, 0x65, 0x5f, 0x62,
+                0x75, 0x69, 0x6c, 0x64, 0x65, 0x72, 0x50, 0x0c, 0x73, 0x70,
+                0x61, 0x72, 0x6b, 0x79, 0x06, 0x08, 0x73, 0x70, 0x6f, 0x74, 0x02])).should.be.true;
         });
 
         it('should encode a schema with another dependent schema', function() {
@@ -1042,7 +1113,83 @@ describe('IO', function(){
                 record.should.have.property("firstName", "bob");
                 record.should.have.property("lastName", "the_builder");
                 record.should.have.property("age", 40);
-            })
+            });
+            it('should decode a record with a nested record and return a json object containing the data', function(){
+                var schema = Avro.Schema({
+                    "name": "user",
+                    "type": "record",
+                    "fields": [
+                        {"name":"firstName","type": "string"},
+                        {"name":"lastName","type": "string"},
+                        {"name":"age","type": "int"},
+                        {
+                            "name":"dog",
+                            "type": "record",
+                            "fields": [
+                                {"name":"name","type": "string"},
+                                {"name":"age","type": "int"}
+                            ]
+                        }
+                    ]
+                });
+                var data = {
+                    "firstName": "bob",
+                    "lastName": "the_builder",
+                    "age": 40,
+                    "dog": {name: "sparky", "age": 3}
+                };
+                block.write(new Buffer([
+                    0x06, 0x62, 0x6f, 0x62, 0x16, 0x74, 0x68, 0x65, 0x5f, 0x62,
+                    0x75, 0x69, 0x6c, 0x64, 0x65, 0x72, 0x50, 0x0c, 0x73, 0x70,
+                    0x61, 0x72, 0x6b, 0x79, 0x06]));
+                var reader = IO.DatumReader(schema);
+                var record = reader.readRecord(schema, schema, decoder);
+                record.should.have.property("firstName", "bob");
+                record.should.have.property("lastName", "the_builder");
+                record.should.have.property("age", 40);
+                record.dog.should.have.property("name", "sparky");
+                record.dog.should.have.property("age", 3);
+            });
+            it('should decode a record with two nested records and return a json object containing the data', function(){
+                var schema = Avro.Schema({
+                    "name": "user",
+                    "type": "record",
+                    "fields": [
+                        {"name":"firstName","type": "string"},
+                        {"name":"lastName","type": "string"},
+                        {"name":"age","type": "int"},
+                        {
+                            "name":"dog",
+                            "type": "record",
+                            "fields": [
+                                {"name":"name","type": "string"},
+                                {"name":"age","type": "int"}
+                            ]
+                        },
+                        {"name":"dog2","type": "dog"}
+                    ]
+                });
+                var data = {
+                    "firstName": "bob",
+                    "lastName": "the_builder",
+                    "age": 40,
+                    "dog": {name: "sparky", "age": 3},
+                    "dog2": {name: "spot", "age": 1}
+                };
+                block.write(new Buffer([
+                    0x06, 0x62, 0x6f, 0x62, 0x16, 0x74, 0x68, 0x65, 0x5f, 0x62,
+                    0x75, 0x69, 0x6c, 0x64, 0x65, 0x72, 0x50, 0x0c, 0x73, 0x70,
+                    0x61, 0x72, 0x6b, 0x79, 0x06, 0x08, 0x73, 0x70, 0x6f, 0x74, 0x02]));
+                var reader = IO.DatumReader(schema);
+                var record = reader.readRecord(schema, schema, decoder);
+                record.should.have.property("firstName", "bob");
+                record.should.have.property("lastName", "the_builder");
+                record.should.have.property("age", 40);
+                record.dog.should.have.property("name", "sparky");
+                record.dog.should.have.property("age", 3);
+                record.dog2.should.have.property("name", "spot");
+                record.dog2.should.have.property("age", 1);
+            });
         });
         describe('skipData()', function(){
             var schema = Avro.Schema({
