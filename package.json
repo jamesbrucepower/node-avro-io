@@ -6,6 +6,15 @@
     "name": "James Power",
     "email": "james.bruce.power@gmail.com"
   },
+  "contributors": [
+    "Jeremiah Lu <jlu@uber.com>",
+    "Matt Lavin <matt.lavin@gmail.com>",
+    "Austin Kelleher <austin.kell47@gmail.com>",
+    "Martin Cizek <martin.cizek@socialbakers.com>",
+    "Xander Dumaine <xander.dumaine@inin.com>",
+    "Andrew Austin <andrewaclt@gmail.com>",
+    "Hannes Stockner <hannes.stockner@gmail.com>"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
