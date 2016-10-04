@@ -1,0 +1,23 @@
+{
+    "fields": [
+        {
+            "name": "host",
+            "type": "string"
+        },
+        {
+            "name": "time",
+            "type": "string"
+        },
+        {
+            "name": "elapsedTime",
+            "type": "long"
+        },
+        {
+            "name": "request",
+            "type": "e.d.c.b.a.Request"
+        }
+    ],
+    "name": "LogEvent",
+    "namespace": "f.e.d.c.b.a",
+    "type": "record"
+}

@@ -1,0 +1,36 @@
+{
+    "name": "Request",
+    "namespace": "e.d.c.b.a",
+    "type": "record",
+    "fields": [
+        {
+            "name": "headers",
+            "type": {
+                "type": "map",
+                "values": "string"
+            }
+        },
+        {
+            "name": "method",
+            "type": "string"
+        },
+        {
+            "name": "path",
+            "type": "string"
+        },
+        {
+            "name": "queryString",
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        {
+            "name": "body",
+            "type": {
+                "type": "map",
+                "values": "string"
+            }
+        }
+    ]
+}
