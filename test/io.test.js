@@ -546,6 +546,33 @@ describe('IO', function(){
                 writer.write(record, encoder);
                 block.toBuffer()[0].should.equal(0);
             });
+            it('should encode a union of a array with null type and map', function () {
+                var schema = Avro.Schema(
+                    [
+                        "null",
+                        {
+                            "type": "map",
+                            "values": "string"
+                        }
+                    ]
+                );
+                var block = DataFile.Block();
+                var writer = IO.DatumWriter(schema);
+                var encoder = IO.BinaryEncoder(block);
+                var record = {
+                    "Archer": "Boop"
+                };
+
+                writer.write(record, encoder);
+                console.log(block.toBuffer().toJSON());
+                block.toBuffer().equals(new Buffer([ 2, 2, 12, 65, 114, 99, 104, 101, 114, 8, 66, 111, 111, 112, 0 ])).should.be.true;
+                block.toBuffer().slice(10,14).toString().should.equal(record.Archer);
+                block.flush();
+
+                var record = null;
+                writer.write(record, encoder);
+                block.toBuffer()[0].should.equal(0);
+            });
 
 
 
