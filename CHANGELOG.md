@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.0
+
+- Adopt snappy 6.x
+- Drop support for node 0.10 & 0.12
+
 ## v1.0.0
 
 - Adopt snappy 5.x
